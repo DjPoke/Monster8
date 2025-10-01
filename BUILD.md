@@ -1,189 +1,180 @@
-# Monster8 Editor - Guide de Compilation
+# Guide de Build - Monster8 Editor
 
-Ce guide explique comment compiler Monster8 Editor sur Linux et Windows en utilisant **Make**.
+## Vue d'ensemble
 
-## 📋 Prérequis
+Le projet Monster8 Editor supporte maintenant deux configurations de build :
+- **Debug** : Version avec symboles de débogage, sans optimisation (-g -O0 -DDEBUG)
+- **Release** : Version optimisée pour la production (-O3 -DNDEBUG)
 
-### Linux (Ubuntu/Debian)
+## Structure des répertoires
 
-```bash
-# Installer les dépendances
-sudo apt-get update
-sudo apt-get install build-essential pkg-config
-sudo apt-get install libgtk-3-dev libgtksourceview-3.0-dev libharfbuzz-dev
+Les builds sont organisés dans des répertoires séparés :
+```
+build/
+├── Debug/
+│   ├── Monster8Editor.exe (Windows) ou Monster8Editor (Linux)
+│   ├── *.o (fichiers objets)
+│   └── app.res (ressources Windows)
+└── Release/
+    ├── Monster8Editor.exe (Windows) ou Monster8Editor (Linux)
+    ├── *.o (fichiers objets)
+    └── app.res (ressources Windows)
 ```
 
-### Linux (Fedora/RHEL)
+## Compilation avec Make
+
+### Commandes de base
 
 ```bash
-# Installer les dépendances
-sudo dnf install gcc-c++ make pkg-config
-sudo dnf install gtk3-devel gtksourceview3-devel harfbuzz-devel
-```
-
-### Linux (Arch)
-
-```bash
-# Installer les dépendances
-sudo pacman -S base-devel pkg-config
-sudo pacman -S gtk3 gtksourceview3 harfbuzz
-```
-
-### Windows (MSYS2)
-
-1. **Télécharger et installer MSYS2** depuis https://www.msys2.org/
-
-2. **Ouvrir "MSYS2 MinGW 64-bit"** depuis le menu Démarrer
-
-3. **Installer les dépendances** :
-```bash
-# Mettre à jour MSYS2
-pacman -Syu
-
-# Installer les outils de build
-pacman -S mingw-w64-x86_64-gcc
-pacman -S mingw-w64-x86_64-make
-pacman -S mingw-w64-x86_64-pkg-config
-pacman -S make
-
-# Installer GTK3 et dépendances
-pacman -S mingw-w64-x86_64-gtk3
-pacman -S mingw-w64-x86_64-gtksourceview3
-pacman -S mingw-w64-x86_64-harfbuzz
-```
-
-## 🔨 Compilation
-
-### Méthode 1 : Utiliser le script de build (Recommandé)
-
-Le script `build.sh` détecte automatiquement votre plateforme et compile le projet.
-
-#### Linux
-```bash
-chmod +x build.sh
-./build.sh
-```
-
-#### Windows (MSYS2)
-```bash
-# Dans le terminal MSYS2 MinGW 64-bit
-chmod +x build.sh
-./build.sh
-```
-
-### Méthode 2 : Utiliser Make directement
-
-#### Linux et Windows (MSYS2)
-```bash
-# Compilation simple
+# Build Debug (par défaut)
 make
+make debug
 
-# Compilation avec tous les cœurs CPU
-make -j$(nproc)  # Linux
-make -j$NUMBER_OF_PROCESSORS  # Windows MSYS2
+# Build Release
+make release
+
+# Build avec type spécifique
+make BUILD_TYPE=Debug
+make BUILD_TYPE=Release
 ```
 
-### Commandes Make disponibles
+### Commandes de nettoyage
 
 ```bash
-make          # Compiler le projet
-make clean    # Nettoyer les fichiers de build
-make distclean# Nettoyage complet (inclut les backups)
-make install  # Installer (Linux uniquement)
-make uninstall# Désinstaller (Linux uniquement)
-make info     # Afficher la configuration
-make help     # Afficher l'aide
-```
-
-## 🚀 Exécution
-
-### Linux
-```bash
-./Monster8Editor
-```
-
-### Windows (MSYS2)
-```bash
-./Monster8Editor.exe
-```
-
-**Note Windows** : Pour exécuter l'application en dehors de MSYS2, vous devez soit :
-- Ajouter `C:\msys64\mingw64\bin` à votre PATH système
-- Copier les DLLs GTK nécessaires dans le même dossier que l'exécutable
-
-## 📦 Installation (Linux uniquement)
-
-```bash
-# Installation système
-sudo make install
-
-# Désinstallation
-sudo make uninstall
-```
-
-Cela installera l'exécutable dans `/usr/local/bin/`.
-
-### Windows
-L'installation système n'est pas supportée. Copiez simplement `Monster8Editor.exe` où vous voulez.
-
-## 🧹 Nettoyage
-
-```bash
-# Nettoyer les fichiers objets et l'exécutable
+# Nettoyer le build actuel
 make clean
+
+# Nettoyer tous les builds (Debug + Release)
+make clean-all
 
 # Nettoyage complet (inclut les fichiers de backup)
 make distclean
 ```
 
-## 🐛 Résolution de problèmes
+### Informations
 
-### Linux : "Package gtk+-3.0 was not found"
 ```bash
-# Vérifier que pkg-config trouve GTK
-pkg-config --modversion gtk+-3.0
+# Afficher la configuration de build
+make info
 
-# Si non trouvé, réinstaller
-sudo apt-get install --reinstall libgtk-3-dev
+# Afficher l'aide
+make help
 ```
 
-### Windows : "pkg-config not found"
-- Assurez-vous d'utiliser le terminal **MSYS2 MinGW 64-bit** (pas MSYS2 MSYS)
-- Vérifiez que pkg-config est installé : `pacman -S mingw-w64-x86_64-pkg-config`
+## Compilation dans VS Code
 
-### Windows : "make: command not found"
+### Tâches disponibles
+
+Le fichier `.vscode/tasks.json` définit les tâches suivantes :
+
+1. **Build Monster8Editor (Debug)** - Build Debug (tâche par défaut)
+2. **Build Monster8Editor (Release)** - Build Release
+3. **Build Monster8Editor (Debug - MSYS2)** - Build Debug via MSYS2 (Windows)
+4. **Build Monster8Editor (Release - MSYS2)** - Build Release via MSYS2 (Windows)
+5. **Clean Current Build** - Nettoyer le build actuel
+6. **Clean All Builds** - Nettoyer tous les builds
+7. **Build Info** - Afficher les informations de configuration
+
+### Raccourcis clavier
+
+- `Ctrl+Shift+B` : Exécuter la tâche de build par défaut (Debug)
+- `Ctrl+Shift+P` puis "Tasks: Run Task" : Choisir une tâche spécifique
+
+## Débogage dans VS Code
+
+### Configurations de lancement
+
+Le fichier `.vscode/launch.json` définit 4 configurations :
+
+1. **Debug (Windows)** - Déboguer la version Debug sur Windows
+2. **Release (Windows)** - Déboguer la version Release sur Windows
+3. **Debug (Linux)** - Déboguer la version Debug sur Linux
+4. **Release (Linux)** - Déboguer la version Release sur Linux
+
+### Utilisation
+
+1. Appuyez sur `F5` ou allez dans le menu "Run > Start Debugging"
+2. Sélectionnez la configuration appropriée dans la liste déroulante
+3. Le projet sera automatiquement compilé avant le lancement
+
+## Différences entre Debug et Release
+
+### Version Debug
+- **Optimisation** : Aucune (-O0)
+- **Symboles de débogage** : Activés (-g)
+- **Définitions** : DEBUG défini
+- **Taille** : Plus grande
+- **Performance** : Plus lente
+- **Usage** : Développement et débogage
+
+### Version Release
+- **Optimisation** : Maximum (-O3)
+- **Symboles de débogage** : Désactivés
+- **Définitions** : NDEBUG défini
+- **Taille** : Plus petite
+- **Performance** : Optimale
+- **Usage** : Distribution et production
+
+## Plateformes supportées
+
+### Windows
+- Compilateur : MinGW-w64 (via MSYS2)
+- Exécutable : `build/Debug/Monster8Editor.exe` ou `build/Release/Monster8Editor.exe`
+- Ressources : Fichier `app.rc` compilé en `app.res`
+
+### Linux
+- Compilateur : GCC
+- Exécutable : `build/Debug/Monster8Editor` ou `build/Release/Monster8Editor`
+- Installation : `sudo make install` (installe dans `/usr/local/bin`)
+
+## Dépendances
+
+Le projet nécessite les bibliothèques suivantes :
+- GTK+ 3.0
+- GtkSourceView 3.0
+- HarfBuzz
+- GLib 2.0
+- Cairo
+- Pango
+
+### Installation des dépendances
+
+**Windows (MSYS2)** :
 ```bash
-# Installer make dans MSYS2
-pacman -S make
+pacman -S mingw-w64-x86_64-gtk3 mingw-w64-x86_64-gtksourceview3 mingw-w64-x86_64-harfbuzz
 ```
 
-### Windows : "Cannot find -lgtk-3"
-- Réinstallez GTK3 : `pacman -S mingw-w64-x86_64-gtk3`
-- Vérifiez que vous utilisez MinGW 64-bit (pas 32-bit)
-
-### Erreurs de compilation C++17
-- Vérifiez votre version de GCC : `g++ --version` (doit être >= 7.0)
-- Sur Ubuntu ancien : `sudo apt-get install g++-9` puis utilisez `CXX=g++-9 make`
-
-### Windows : L'exécutable ne démarre pas en dehors de MSYS2
-Vous devez ajouter les DLLs GTK au PATH ou les copier :
+**Linux (Ubuntu/Debian)** :
 ```bash
-# Option 1 : Ajouter au PATH (temporaire)
-export PATH="/mingw64/bin:$PATH"
-
-# Option 2 : Copier les DLLs nécessaires
-ldd Monster8Editor.exe  # Liste les DLLs requises
+sudo apt-get install libgtk-3-dev libgtksourceview-3.0-dev libharfbuzz-dev
 ```
 
-## 📝 Notes
+**Linux (Fedora)** :
+```bash
+sudo dnf install gtk3-devel gtksourceview3-devel harfbuzz-devel
+```
 
-- **Makefile multiplateforme** : Le même Makefile fonctionne sur Linux et Windows (MSYS2)
-- **Détection automatique** : Le Makefile détecte automatiquement votre plateforme
-- **Compilation incrémentale** : Seuls les fichiers modifiés sont recompilés
-- **Cross-compilation** : Non supportée actuellement
+## Résolution de problèmes
 
-## 🔗 Liens utiles
+### Make non trouvé (Windows)
+Utilisez les tâches MSYS2 dans VS Code ou exécutez les commandes via MSYS2 :
+```bash
+C:\msys64\msys2_shell.cmd -mingw64 -defterm -no-start -here -c "make debug"
+```
 
-- [GTK Documentation](https://docs.gtk.org/gtk3/)
-- [MSYS2 Documentation](https://www.msys2.org/docs/what-is-msys2/)
-- [GNU Make Manual](https://www.gnu.org/software/make/manual/)
+### Erreurs de compilation
+1. Vérifiez que toutes les dépendances sont installées
+2. Exécutez `make info` pour voir la configuration
+3. Nettoyez et recompilez : `make clean-all && make debug`
+
+### Erreurs de lancement dans VS Code
+1. Vérifiez que le build a réussi
+2. Vérifiez que le chemin de l'exécutable est correct dans `launch.json`
+3. Vérifiez que GDB est installé et accessible
+
+## Notes importantes
+
+- Le répertoire `build/` est ignoré par Git (voir `.gitignore`)
+- Les fichiers objets (*.o) sont maintenant dans les répertoires de build
+- Chaque configuration (Debug/Release) a ses propres fichiers objets
+- Les deux versions peuvent coexister sans conflit

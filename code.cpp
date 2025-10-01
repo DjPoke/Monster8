@@ -1061,20 +1061,20 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
         if(dat == "") {
             return "Bad parameters at line " + std::to_string(l);
         } else {
-            for(int i = 1; i <= CountString(dat, ","); i++) {
+            for(uint32_t i = 1; i <= CountString(dat, ","); i++) {
                 std::string d = StringField(dat, i, ",");
 
                 if(d[0] == '"' && d[d.length() - 1] == '"') {
                     d.erase(0, 1); // remove first char
                     d.pop_back(); // remove last char
 
-                    for(int j = 0; j < d.size(); j++) {
+                    for(uint32_t j = 0; j < d.size(); j++) {
                         if(d[j] == '"') {
                             return "Bad string at line " + std::to_string(l);
                         }
                     }
 
-                    for(int j = 0; j < d.size(); j++) {
+                    for(uint32_t j = 0; j < d.size(); j++) {
                         ToMemory(PC, (char)d[j]);
                     }
                 } else {
@@ -1090,7 +1090,7 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
             uint32_t ln = Val(StringField(dat, 1, ",")) & 0xFFFFFF;
 
             if(ln > 0) {
-                for(int i = 0; i < ln; i++) {
+                for(uint32_t i = 0; i < ln; i++) {
                     ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF0000) >> 16);
                     ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF00) >> 8);
                     ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF));

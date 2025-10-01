@@ -16,6 +16,16 @@ CXXFLAGS := -std=c++17 -Wall -Wextra
 SOURCES := main.cpp M8.cpp
 HEADERS := M8.hpp
 
+# Resource files (Windows only)
+ifeq ($(DETECTED_OS),Windows)
+    RESOURCE_RC := resource.rc
+    RESOURCE_OBJ := resource.o
+    WINDRES := windres
+else
+    RESOURCE_RC :=
+    RESOURCE_OBJ :=
+endif
+
 # Output executable
 ifeq ($(DETECTED_OS),Windows)
     TARGET := Monster8.exe
@@ -77,14 +87,24 @@ endif
 release: $(TARGET)
 
 # Build target
+ifeq ($(DETECTED_OS),Windows)
+$(TARGET): $(SOURCES) $(HEADERS) $(RESOURCE_OBJ)
+	$(CXX) $(CXXFLAGS) $(SDL2_CFLAGS) $(SOURCES) $(RESOURCE_OBJ) -o $(TARGET) $(SDL2_LIBS) $(LDFLAGS)
+
+# Compile resource file (Windows only)
+$(RESOURCE_OBJ): $(RESOURCE_RC)
+	$(WINDRES) $(RESOURCE_RC) -O coff -o $(RESOURCE_OBJ)
+else
 $(TARGET): $(SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(SDL2_CFLAGS) $(SOURCES) -o $(TARGET) $(SDL2_LIBS) $(LDFLAGS)
+endif
 
 # Clean build artifacts
 clean:
 ifeq ($(DETECTED_OS),Windows)
 	@if exist $(TARGET) $(RM) $(TARGET)
 	@if exist *.o $(RM) *.o
+	@if exist $(RESOURCE_OBJ) $(RM) $(RESOURCE_OBJ)
 else
 	$(RM) $(TARGET) *.o
 endif

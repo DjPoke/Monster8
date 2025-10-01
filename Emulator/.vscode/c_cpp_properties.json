@@ -33,26 +33,27 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "/usr/include/SDL2",
-                "/usr/include",
-                "/usr/include/c++/13",
-                "/usr/include/x86_64-linux-gnu/c++/13",
-                "/usr/include/c++/13/backward"
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "LINUX",
                 "_REENTRANT",
                 "_DEBUG"
             ],
-            "compilerPath": "/usr/bin/g++",
+            "compilerPath": "",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "linux-gcc-x64",
             "compilerArgs": [
                 "-Wall",
                 "-Wextra"
-            ]
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4
