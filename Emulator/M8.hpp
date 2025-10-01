@@ -2,8 +2,7 @@
 #include <array>
 #include <vector>
 #include <stdint.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
+#include "sdl_config.h"
 
 using namespace std;
 

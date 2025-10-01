@@ -1378,8 +1378,8 @@ void Monster8::emulateCycle() {
                         break;
                     case 0x0D: // Scroll Screen (3 opcode)
                         {
-                            uint scrollx = getOpcode();
-                            uint scrolly = getOpcode();
+                            uint8_t scrollx = getOpcode();
+                            uint8_t scrolly = getOpcode();
 
                             ScrollScreen(scrollx, scrolly);
                         }

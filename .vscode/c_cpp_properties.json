@@ -1,6 +1,39 @@
 {
     "configurations": [
         {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/msys64/mingw64/include/gtk-3.0",
+                "C:/msys64/mingw64/include/gtksourceview-3.0",
+                "C:/msys64/mingw64/include/pango-1.0",
+                "C:/msys64/mingw64/include/harfbuzz",
+                "C:/msys64/mingw64/include/cairo",
+                "C:/msys64/mingw64/include/freetype2",
+                "C:/msys64/mingw64/include/pixman-1",
+                "C:/msys64/mingw64/include/gdk-pixbuf-2.0",
+                "C:/msys64/mingw64/include/libpng16",
+                "C:/msys64/mingw64/include/webp",
+                "C:/msys64/mingw64/include/atk-1.0",
+                "C:/msys64/mingw64/include/fribidi",
+                "C:/msys64/mingw64/include/libxml2",
+                "C:/msys64/mingw64/include/glib-2.0",
+                "C:/msys64/mingw64/lib/glib-2.0/include",
+                "C:/msys64/mingw64/include"
+            ],
+            "defines": [
+                "NDEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "LIBDEFLATE_DLL"
+            ],
+            "windowsSdkVersion": "10.0.22621.0",
+            "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-x64"
+        },
+        {
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
@@ -27,43 +60,7 @@
                 "/usr/lib/x86_64-linux-gnu/dbus-1.0/include"
             ],
             "defines": [
-                "GTK_COMPILATION",
-                "_GNU_SOURCE"
-            ],
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64",
-            "compilerArgs": [
-                "-pthread"
-            ]
-        },
-        {
-            "name": "LinuxConfig",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "/usr/include/gtk-3.0",
-                "/usr/include/pango-1.0",
-                "/usr/include/glib-2.0",
-                "/usr/lib/x86_64-linux-gnu/glib-2.0/include",
-                "/usr/include/harfbuzz",
-                "/usr/include/freetype2",
-                "/usr/include/libpng16",
-                "/usr/include/libmount",
-                "/usr/include/blkid",
-                "/usr/include/fribidi",
-                "/usr/include/cairo",
-                "/usr/include/pixman-1",
-                "/usr/include/gdk-pixbuf-2.0",
-                "/usr/include/x86_64-linux-gnu",
-                "/usr/include/webp",
-                "/usr/include/gio-unix-2.0",
-                "/usr/include/atk-1.0",
-                "/usr/include/at-spi2-atk/2.0",
-                "/usr/include/at-spi-2.0",
-                "/usr/include/dbus-1.0",
-                "/usr/lib/x86_64-linux-gnu/dbus-1.0/include"
-            ],
-            "defines": [
+                "NDEBUG",
                 "GTK_COMPILATION",
                 "_GNU_SOURCE"
             ],

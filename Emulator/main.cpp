@@ -3,9 +3,7 @@
 #include <string>
 #include <filesystem>
 #include <algorithm>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
-#include <SDL2/SDL_image.h>
+#include "sdl_config.h"
 #include "M8.hpp"
 
 // Pointeurs globaux pour manette/joystick
@@ -183,60 +181,60 @@ void handleInput(Monster8 &m8, bool &quit, bool &spacePressed, bool &enterPresse
 }
 
 
-// Fonction pour dessiner l'écran de l'émulateur
-void renderScreen(SDL_Renderer *renderer, Monster8 &m8) {
-    // Effacer l'écran (remplir avec la couleur de border selon la palette)
-    {
-        uint32_t paletteBase = 64000; // palette 0 par défaut
-        uint32_t bi = (static_cast<uint32_t>(m8.border) & 0xFFu) * 3u;
-        uint32_t colorIndex = paletteBase + bi;
-        SDL_SetRenderDrawColor(renderer,
-                               m8.screen[colorIndex + 2],
-                               m8.screen[colorIndex + 1],
-                               m8.screen[colorIndex + 0],
-                               255);
-        SDL_RenderClear(renderer);
-    }
-
-    // Calculer l'échelle entière maximale et centrer l'image
-    int outW = 0, outH = 0;
-    SDL_GetRendererOutputSize(renderer, &outW, &outH);
-
+// Fonction pour dessiner l'écran de l'émulateur (optimisée avec texture)
+void renderScreen(SDL_Renderer *renderer, SDL_Texture *screenTexture, Monster8 &m8) {
     const int baseW = 320;
     const int baseH = 200;
-
+    
+    // Buffer pour les pixels RGBA
+    static uint32_t pixels[baseW * baseH];
+    
+    // Convertir le buffer de l'émulateur en pixels RGBA
+    uint32_t paletteBase = 64000; // palette 0 par défaut
+    for (int i = 0; i < baseW * baseH; ++i) {
+        uint8_t paletteIndex = m8.screen[i];
+        uint32_t colorIndex = paletteBase + ((uint32_t)paletteIndex) * 3;
+        
+        // Format RGBA8888 (ou ARGB8888 selon la plateforme)
+        uint8_t r = m8.screen[colorIndex + 2];
+        uint8_t g = m8.screen[colorIndex + 1];
+        uint8_t b = m8.screen[colorIndex + 0];
+        
+        // RGBA8888 format
+        pixels[i] = (r << 24) | (g << 16) | (b << 8) | 0xFF;
+    }
+    
+    // Mettre à jour la texture avec les pixels
+    SDL_UpdateTexture(screenTexture, nullptr, pixels, baseW * sizeof(uint32_t));
+    
+    // Effacer l'écran avec la couleur de bordure
+    uint32_t bi = (static_cast<uint32_t>(m8.border) & 0xFFu) * 3u;
+    uint32_t borderColorIndex = paletteBase + bi;
+    SDL_SetRenderDrawColor(renderer,
+                           m8.screen[borderColorIndex + 2],
+                           m8.screen[borderColorIndex + 1],
+                           m8.screen[borderColorIndex + 0],
+                           255);
+    SDL_RenderClear(renderer);
+    
+    // Calculer l'échelle et centrer l'image
+    int outW = 0, outH = 0;
+    SDL_GetRendererOutputSize(renderer, &outW, &outH);
+    
     int scaleX = outW / baseW;
     int scaleY = outH / baseH;
     int scale = (scaleX < scaleY) ? scaleX : scaleY;
-    if (scale < 1) scale = 1; // Éviter 0 si la fenêtre est trop petite
-
+    if (scale < 1) scale = 1;
+    
     int drawW = baseW * scale;
     int drawH = baseH * scale;
     int offsetX = (outW - drawW) / 2;
     int offsetY = (outH - drawH) / 2;
-
-    // Dessiner chaque pixel de l'écran de l'émulateur avec la nouvelle échelle centrée
-    for (int y = 0; y < baseH; ++y) {
-        for (int x = 0; x < baseW; ++x) {
-            // Récupérer la valeur du pixel dans le buffer d'écran de l'émulateur
-            uint8_t pixel = m8.screen[y * baseW + x];
-
-            // aller chercher dans la palette de couleur
-            uint32_t colorIndex = ((uint32_t)pixel) * 3 + 64000;
-
-            SDL_SetRenderDrawColor(renderer, m8.screen[colorIndex + 2], m8.screen[colorIndex + 1], m8.screen[colorIndex + 0], 255);
-
-            // Dessiner le pixel agrandi et centré
-            SDL_Rect pixelRect = {
-                offsetX + x * scale,
-                offsetY + y * scale,
-                scale,
-                scale
-            };
-            SDL_RenderFillRect(renderer, &pixelRect);
-        }
-    }
-
+    
+    // Dessiner la texture à l'écran
+    SDL_Rect dstRect = { offsetX, offsetY, drawW, drawH };
+    SDL_RenderCopy(renderer, screenTexture, nullptr, &dstRect);
+    
     // Mettre à jour l'écran
     SDL_RenderPresent(renderer);
 }
@@ -444,6 +442,27 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Créer une texture pour l'écran de l'émulateur (optimisation de performance)
+    SDL_Texture* screenTexture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        WINDOW_WIDTH,
+        WINDOW_HEIGHT
+    );
+    
+    if (screenTexture == nullptr) {
+        std::cerr << "Erreur lors de la création de la texture d'écran: " << SDL_GetError() << std::endl;
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        if (audioReady) {
+            Mix_CloseAudio();
+        }
+        Mix_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
     // Initialiser l'émulateur uniquement après la création réussie de la fenêtre et du renderer
     static Monster8 m8;
 
@@ -547,14 +566,14 @@ int main(int argc, char* argv[]) {
 
                 // Dessiner l'écran si nécessaire
                 if (m8.drawFlag) {
-                    renderScreen(renderer, m8);
+                    renderScreen(renderer, screenTexture, m8);
                     m8.drawFlag = false;
                 }
             }
         } else {
             // Dessiner l'écran si nécessaire
             if (m8.drawFlag) {
-                renderScreen(renderer, m8);
+                renderScreen(renderer, screenTexture, m8);
                 m8.drawFlag = false;
             }
         }
@@ -569,6 +588,10 @@ int main(int argc, char* argv[]) {
 
     if (splashTexture) {
         SDL_DestroyTexture(splashTexture);
+    }
+    
+    if (screenTexture) {
+        SDL_DestroyTexture(screenTexture);
     }
     
     // Nettoyer et quitter

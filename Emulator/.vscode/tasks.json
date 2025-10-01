@@ -2,13 +2,16 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Monster8 (SDL2)",
+            "label": "Build Monster8 (Debug)",
             "type": "shell",
-            "command": "/bin/sh",
-            "args": [
-                "-c",
-                "g++ -std=c++17 -O1 -g -fsanitize=address -fno-omit-frame-pointer \"${workspaceFolder}/main.cpp\" \"${workspaceFolder}/M8.cpp\" -o \"${workspaceFolder}/Monster8\" $(sdl2-config --cflags --libs) -lSDL2_mixer -lSDL2_image -fsanitize=address"
-            ],
+            "windows": {
+                "command": "mingw32-make",
+                "args": ["debug"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["debug"]
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -16,18 +19,23 @@
                 "kind": "build",
                 "isDefault": false
             },
-            "problemMatcher": [
-                "$gcc"
-            ]
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
         },
         {
             "label": "Build Monster8 (Release)",
             "type": "shell",
-            "command": "/bin/sh",
-            "args": [
-                "-c",
-                "g++ -std=c++17 -O2 -DNDEBUG \"${workspaceFolder}/main.cpp\" \"${workspaceFolder}/M8.cpp\" -o \"${workspaceFolder}/Monster8\" $(sdl2-config --cflags --libs) -lSDL2_mixer -lSDL2_image -s"
-            ],
+            "windows": {
+                "command": "mingw32-make",
+                "args": ["release"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["release"]
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -35,32 +43,51 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": [
-                "$gcc"
-            ]
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
         },
         {
-            "type": "cppbuild",
-            "label": "C/C++: g++-13 générer le fichier actif",
-            "command": "/usr/bin/g++-13",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
-            ],
+            "label": "Clean Build",
+            "type": "shell",
+            "windows": {
+                "command": "mingw32-make",
+                "args": ["clean"]
+            },
+            "linux": {
+                "command": "make",
+                "args": ["clean"]
+            },
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": false
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Build and Run (Release)",
+            "type": "shell",
+            "windows": {
+                "command": "mingw32-make release && .\\Monster8.exe"
             },
-            "detail": "Tâche générée par le débogueur."
+            "linux": {
+                "command": "make release && ./Monster8"
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "test",
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
         }
     ]
 }
