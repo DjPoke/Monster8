@@ -2,64 +2,14 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Monster8 (Debug)",
+            "label": "CMake: Configure (Debug)",
             "type": "shell",
-            "windows": {
-                "command": "mingw32-make",
-                "args": ["debug"]
-            },
-            "linux": {
-                "command": "make",
-                "args": ["debug"]
-            },
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "problemMatcher": ["$gcc"],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Build Monster8 (Release)",
-            "type": "shell",
-            "windows": {
-                "command": "mingw32-make",
-                "args": ["release"]
-            },
-            "linux": {
-                "command": "make",
-                "args": ["release"]
-            },
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": ["$gcc"],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Clean Build",
-            "type": "shell",
-            "windows": {
-                "command": "mingw32-make",
-                "args": ["clean"]
-            },
-            "linux": {
-                "command": "make",
-                "args": ["clean"]
-            },
+            "command": "cmake",
+            "args": [
+                "-B",
+                "${workspaceFolder}/build",
+                "-DCMAKE_BUILD_TYPE=Debug"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -71,19 +21,109 @@
             }
         },
         {
-            "label": "Build and Run (Release)",
+            "label": "CMake: Configure (Release)",
             "type": "shell",
-            "windows": {
-                "command": "mingw32-make release && .\\Monster8.exe"
+            "command": "cmake",
+            "args": [
+                "-B",
+                "${workspaceFolder}/build",
+                "-DCMAKE_BUILD_TYPE=Release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
             },
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "CMake: Build (Debug)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build",
+                "--config",
+                "Debug",
+                "-j",
+                "8"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOn": ["CMake: Configure (Debug)"],
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "CMake: Build (Release)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build",
+                "--config",
+                "Release",
+                "-j",
+                "8"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": ["CMake: Configure (Release)"],
+            "problemMatcher": ["$gcc"],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "CMake: Clean",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "CMake: Build and Run (Release)",
+            "type": "shell",
             "linux": {
-                "command": "make release && ./Monster8"
+                "command": "${workspaceFolder}/build/Monster8"
+            },
+            "windows": {
+                "command": "${workspaceFolder}\\build\\Monster8.exe"
             },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
             "group": "test",
-            "problemMatcher": ["$gcc"],
+            "dependsOn": ["CMake: Build (Release)"],
+            "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"

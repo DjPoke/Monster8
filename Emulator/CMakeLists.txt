@@ -1,16 +1,18 @@
-cmake_minimum_required(VERSION 3.10)
-project(Monster8 VERSION 1.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.15)
+project(Monster8 VERSION 1.0.0 LANGUAGES CXX)
 
-# Set C++ standard
+# Ajouter le dossier cmake aux modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Configuration C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Find SDL2 packages
-find_package(SDL2 REQUIRED)
-find_package(SDL2_mixer REQUIRED)
-find_package(SDL2_image REQUIRED)
+# Options de build
+option(BUILD_DEBUG "Build with debug symbols and sanitizers" OFF)
 
-# Source files
+# Fichiers sources
 set(SOURCES
     main.cpp
     M8.cpp
@@ -21,74 +23,101 @@ set(HEADERS
     sdl_config.h
 )
 
-# Create executable
-add_executable(Monster8 ${SOURCES} ${HEADERS})
-
-# Include directories
-target_include_directories(Monster8 PRIVATE
-    ${SDL2_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-# Link libraries
-target_link_libraries(Monster8 PRIVATE
-    ${SDL2_LIBRARIES}
-    SDL2_mixer::SDL2_mixer
-    SDL2_image::SDL2_image
-)
-
-# Platform-specific settings
+# Créer l'exécutable
 if(WIN32)
-    # Windows-specific settings
-    target_compile_definitions(Monster8 PRIVATE SDL_MAIN_HANDLED)
-    
-    # Copy SDL2 DLLs to output directory on Windows
-    if(MSVC)
-        # For MSVC, copy DLLs after build
-        add_custom_command(TARGET Monster8 POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:SDL2::SDL2>
-            $<TARGET_FILE_DIR:Monster8>
-        )
-    endif()
-elseif(UNIX AND NOT APPLE)
-    # Linux-specific settings
-    target_link_libraries(Monster8 PRIVATE pthread dl)
-endif()
-
-# Compiler warnings
-if(MSVC)
-    target_compile_options(Monster8 PRIVATE /W4)
+    # Sur Windows, ajouter le fichier de ressources et créer une application Windows
+    add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS} resource.rc)
 else()
-    target_compile_options(Monster8 PRIVATE -Wall -Wextra -Wpedantic)
+    add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 endif()
 
-# Debug/Release configurations
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(Monster8 PRIVATE DEBUG)
-    if(NOT MSVC)
-        # Enable AddressSanitizer on Linux/GCC for debug builds
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-            target_compile_options(Monster8 PRIVATE -fsanitize=address -fno-omit-frame-pointer)
-            target_link_options(Monster8 PRIVATE -fsanitize=address)
-        endif()
-    endif()
+# Trouver SDL2 et ses extensions
+find_package(SDL2 REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+find_package(SDL2_image REQUIRED)
+
+# Inclure les répertoires SDL2
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${SDL2_INCLUDE_DIRS}
+)
+
+# Lier les bibliothèques SDL2
+if(WIN32)
+    # Configuration spécifique Windows
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        mingw32
+        SDL2::SDL2main
+        SDL2::SDL2
+        SDL2_mixer::SDL2_mixer
+        SDL2_image::SDL2_image
+    )
+    # Définir SDL_main pour Windows
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SDL_MAIN_HANDLED)
+    # Flags de linkage Windows
+    target_link_options(${PROJECT_NAME} PRIVATE -mwindows)
 else()
-    target_compile_definitions(Monster8 PRIVATE NDEBUG)
-    if(NOT MSVC)
-        target_link_options(Monster8 PRIVATE -s)  # Strip symbols
+    # Configuration Linux/Unix
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        SDL2::SDL2
+        SDL2_mixer::SDL2_mixer
+        SDL2_image::SDL2_image
+    )
+endif()
+
+# Flags de compilation communs
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -Wall
+    -Wextra
+    $<$<CONFIG:Debug>:-g -O1>
+    $<$<CONFIG:Release>:-O2 -DNDEBUG>
+)
+
+# Flags de linkage pour Release (strip symbols)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(WIN32)
+        target_link_options(${PROJECT_NAME} PRIVATE -s)
+    else()
+        target_link_options(${PROJECT_NAME} PRIVATE -s)
     endif()
 endif()
 
-# Installation
-install(TARGETS Monster8 DESTINATION bin)
-install(FILES LoadScreen.png DESTINATION bin)
-install(DIRECTORY Cartridges DESTINATION bin)
+# Sanitizers pour Debug sur Linux
+if(BUILD_DEBUG AND UNIX AND NOT APPLE)
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -fsanitize=address
+        -fno-omit-frame-pointer
+    )
+    target_link_options(${PROJECT_NAME} PRIVATE
+        -fsanitize=address
+    )
+endif()
 
-# Print configuration
+# Définir le nom de sortie selon la plateforme
+if(WIN32)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME "Monster8"
+        SUFFIX ".exe"
+    )
+else()
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        OUTPUT_NAME "Monster8"
+    )
+endif()
+
+# Afficher les informations de configuration
 message(STATUS "Monster8 Emulator Configuration:")
-message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "  C++ standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "  SDL2 found: ${SDL2_FOUND}")
-message(STATUS "  SDL2 include: ${SDL2_INCLUDE_DIRS}")
-message(STATUS "  SDL2 libraries: ${SDL2_LIBRARIES}")
+message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "  Platform: ${CMAKE_SYSTEM_NAME}")
+message(STATUS "  Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+if(BUILD_DEBUG)
+    message(STATUS "  Debug Mode: Enabled (with sanitizers on Linux)")
+endif()
+
+# Copier automatiquement l'exécutable vers le répertoire racine après la compilation
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:${PROJECT_NAME}>
+        ${CMAKE_BINARY_DIR}/../$<TARGET_FILE_NAME:${PROJECT_NAME}>
+    COMMENT "Copie de l'exécutable vers le répertoire racine..."
+)

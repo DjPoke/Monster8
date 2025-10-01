@@ -1,0 +1,26 @@
+# Build directories
+build/
+cmake-build-*/
+
+# Compiled executables
+Monster8
+Monster8.exe
+*.o
+*.obj
+
+# CMake cache
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db

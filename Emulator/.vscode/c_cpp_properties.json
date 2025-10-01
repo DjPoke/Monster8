@@ -1,37 +1,16 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "C:/msys64/mingw64/include/c++/15.2.0/**",
-                "C:/msys64/mingw64/include/**",
-                "C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/**"
+                "${workspaceFolder}/**"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE",
-                "__GNUC__=15",
-                "__GNUG__=15",
-                "__cplusplus=201703L",
-                "WIN32",
-                "_WIN32",
-                "__MINGW64__",
-                "__MINGW32__"
-            ],
-            "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "windows-gcc-x64",
-            "browse": {
-                "path": [
-                    "${workspaceFolder}",
-                    "C:/msys64/mingw64/include",
-                    "C:/msys64/mingw64/include/c++/15.2.0"
-                ],
-                "limitSymbolsToIncludedHeaders": false
-            }
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4
