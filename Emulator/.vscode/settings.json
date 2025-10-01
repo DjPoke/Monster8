@@ -6,6 +6,21 @@
         "tuple": "cpp",
         "cmath": "cpp"
     },
-    "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
-    "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true
+    "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": false,
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+    "C_Cpp.loggingLevel": "Debug",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/**",
+        "C:/msys64/mingw64/include/c++/15.2.0",
+        "C:/msys64/mingw64/include/c++/15.2.0/x86_64-w64-mingw32",
+        "C:/msys64/mingw64/include/c++/15.2.0/backward",
+        "C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include",
+        "C:/msys64/mingw64/include",
+        "C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include-fixed"
+    ],
+    "C_Cpp.default.cppStandard": "gnu++17",
+    "C_Cpp.default.cStandard": "c17",
+    "C_Cpp.default.intelliSenseMode": "windows-gcc-x64"
 }

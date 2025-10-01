@@ -71,6 +71,9 @@ void Monster8::initialize() {
 
 
 void Monster8::loadROM(const char* filename) {
+    // Réinitialiser l'émulateur avant de charger une nouvelle ROM
+    initialize();
+    
     ifstream file(filename, ios::binary | ios::ate);
     if (!file.is_open()) {
         cerr << "Error: Unable to open ROM file." << endl;
@@ -1384,8 +1387,8 @@ void Monster8::emulateCycle() {
                             ScrollScreen(scrollx, scrolly);
                         }
                         break;
-                    case 0x0E: // Flip Screen (1 opcode)
-                        Flip();
+                    case 0x0E: // Flip (1 opcode)
+                        drawFlag = true;
                         break;
                     case 0x0F: // Play Sound (5 opcodes)
                         {
@@ -1652,11 +1655,6 @@ void Monster8::ScrollScreen(uint8_t scrollX, uint8_t scrollY) {
             }
         }
     }
-}
-
-void Monster8::Flip() {
-    // Demander un rafraîchissement de l'écran
-    drawFlag = true;
 }
 
 void Monster8::WriteString(uint32_t addr, const char* str) {

@@ -6,15 +6,15 @@
 
 // Try to detect the correct SDL2 include path
 #if defined(_WIN32) || defined(_WIN64)
-    // Windows: Try both include styles
-    #if __has_include(<SDL.h>)
-        #include <SDL.h>
-        #include <SDL_mixer.h>
-        #include <SDL_image.h>
-    #elif __has_include(<SDL2/SDL.h>)
+    // Windows: Try SDL2/ subdirectory first (MSYS2/MinGW standard)
+    #if __has_include(<SDL2/SDL.h>)
         #include <SDL2/SDL.h>
         #include <SDL2/SDL_mixer.h>
         #include <SDL2/SDL_image.h>
+    #elif __has_include(<SDL.h>)
+        #include <SDL.h>
+        #include <SDL_mixer.h>
+        #include <SDL_image.h>
     #else
         #error "SDL2 headers not found. Please install SDL2 development libraries."
     #endif

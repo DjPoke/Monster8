@@ -3,6 +3,7 @@
 #include <string>
 #include <filesystem>
 #include <algorithm>
+#include <cstring>
 #include "sdl_config.h"
 #include "M8.hpp"
 
@@ -182,20 +183,28 @@ void handleInput(Monster8 &m8, bool &quit, bool &spacePressed, bool &enterPresse
 
 
 // Fonction pour dessiner l'écran de l'émulateur (optimisée avec texture)
-void renderScreen(SDL_Renderer *renderer, SDL_Texture *screenTexture, Monster8 &m8) {
+void swapScreen(SDL_Renderer *renderer, SDL_Texture *screenTexture, Monster8 &m8) {
     const int baseW = 320;
     const int baseH = 200;
+    const int screenSize = 64000; // 320 * 200
     
     // Buffer pour les pixels RGBA
     static uint32_t pixels[baseW * baseH];
     
-    // Convertir le buffer de l'émulateur en pixels RGBA
-    uint32_t paletteBase = 64000; // palette 0 par défaut
+    // Lire la couleur de bordure directement
+    uint32_t paletteBase = screenSize; // palette commence à 64000
+    uint32_t bi = (static_cast<uint32_t>(m8.border) & 0xFFu) * 3u;
+    uint32_t borderColorIndex = paletteBase + bi;
+    uint8_t borderR = m8.screen[borderColorIndex + 2];
+    uint8_t borderG = m8.screen[borderColorIndex + 1];
+    uint8_t borderB = m8.screen[borderColorIndex + 0];
+    
+    // Convertir le buffer de l'émulateur en pixels RGBA directement
     for (int i = 0; i < baseW * baseH; ++i) {
         uint8_t paletteIndex = m8.screen[i];
         uint32_t colorIndex = paletteBase + ((uint32_t)paletteIndex) * 3;
         
-        // Format RGBA8888 (ou ARGB8888 selon la plateforme)
+        // Format RGBA8888
         uint8_t r = m8.screen[colorIndex + 2];
         uint8_t g = m8.screen[colorIndex + 1];
         uint8_t b = m8.screen[colorIndex + 0];
@@ -207,32 +216,42 @@ void renderScreen(SDL_Renderer *renderer, SDL_Texture *screenTexture, Monster8 &
     // Mettre à jour la texture avec les pixels
     SDL_UpdateTexture(screenTexture, nullptr, pixels, baseW * sizeof(uint32_t));
     
-    // Effacer l'écran avec la couleur de bordure
-    uint32_t bi = (static_cast<uint32_t>(m8.border) & 0xFFu) * 3u;
-    uint32_t borderColorIndex = paletteBase + bi;
-    SDL_SetRenderDrawColor(renderer,
-                           m8.screen[borderColorIndex + 2],
-                           m8.screen[borderColorIndex + 1],
-                           m8.screen[borderColorIndex + 0],
-                           255);
-    SDL_RenderClear(renderer);
+    // Calculer l'échelle et centrer l'image (cache statique pour éviter les recalculs)
+    static int cachedOutW = 0, cachedOutH = 0;
+    static int cachedOffsetX = 0, cachedOffsetY = 0, cachedDrawW = 0, cachedDrawH = 0;
+    static uint8_t cachedBorderR = 0, cachedBorderG = 0, cachedBorderB = 0;
     
-    // Calculer l'échelle et centrer l'image
     int outW = 0, outH = 0;
     SDL_GetRendererOutputSize(renderer, &outW, &outH);
     
-    int scaleX = outW / baseW;
-    int scaleY = outH / baseH;
-    int scale = (scaleX < scaleY) ? scaleX : scaleY;
-    if (scale < 1) scale = 1;
+    // Recalculer seulement si la taille de la fenêtre a changé
+    if (outW != cachedOutW || outH != cachedOutH) {
+        cachedOutW = outW;
+        cachedOutH = outH;
+        
+        int scaleX = outW / baseW;
+        int scaleY = outH / baseH;
+        int scale = (scaleX < scaleY) ? scaleX : scaleY;
+        if (scale < 1) scale = 1;
+        
+        cachedDrawW = baseW * scale;
+        cachedDrawH = baseH * scale;
+        cachedOffsetX = (outW - cachedDrawW) / 2;
+        cachedOffsetY = (outH - cachedDrawH) / 2;
+    }
     
-    int drawW = baseW * scale;
-    int drawH = baseH * scale;
-    int offsetX = (outW - drawW) / 2;
-    int offsetY = (outH - drawH) / 2;
+    // Effacer seulement si la couleur de bordure a changé
+    if (borderR != cachedBorderR || borderG != cachedBorderG || borderB != cachedBorderB) {
+        cachedBorderR = borderR;
+        cachedBorderG = borderG;
+        cachedBorderB = borderB;
+        SDL_SetRenderDrawColor(renderer, borderR, borderG, borderB, 255);
+    }
     
-    // Dessiner la texture à l'écran
-    SDL_Rect dstRect = { offsetX, offsetY, drawW, drawH };
+    SDL_RenderClear(renderer);
+    
+    // Dessiner screenTexture
+    SDL_Rect dstRect = { cachedOffsetX, cachedOffsetY, cachedDrawW, cachedDrawH };
     SDL_RenderCopy(renderer, screenTexture, nullptr, &dstRect);
     
     // Mettre à jour l'écran
@@ -323,7 +342,6 @@ void drawCartridgeMenu(Monster8& m8, const std::vector<std::string>& carts, int 
         m8.WriteString(base + 128 + i * 64, line.c_str());
         m8.PrintString(base + 128 + i * 64);
     }
-    m8.Flip();
 }
 
 int main(int argc, char* argv[]) {
@@ -424,11 +442,15 @@ int main(int argc, char* argv[]) {
     // Masquer le pointeur de souris dès le départ
     SDL_ShowCursor(SDL_DISABLE);
     
-    // Créer le renderer
+    // Forcer le double buffering pour éviter le clignotement
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0"); // Nearest neighbor (plus rapide)
+    
+    // Créer le renderer avec VSync pour éviter le clignotement
     SDL_Renderer* renderer = SDL_CreateRenderer(
         window,
         -1,
-        SDL_RENDERER_ACCELERATED
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     );
     
     if (renderer == nullptr) {
@@ -441,6 +463,15 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
+    
+    // Vérifier si le VSync est activé
+    SDL_RendererInfo rendererInfo;
+    SDL_GetRendererInfo(renderer, &rendererInfo);
+    if (rendererInfo.flags & SDL_RENDERER_PRESENTVSYNC) {
+        std::cout << "VSync activé avec succès" << std::endl;
+    } else {
+        std::cout << "ATTENTION: VSync non disponible - clignotement possible" << std::endl;
+    }
 
     // Créer une texture pour l'écran de l'émulateur (optimisation de performance)
     SDL_Texture* screenTexture = SDL_CreateTexture(
@@ -450,6 +481,11 @@ int main(int argc, char* argv[]) {
         WINDOW_WIDTH,
         WINDOW_HEIGHT
     );
+    
+    // Configurer le mode de blend pour éviter les artefacts
+    if (screenTexture) {
+        SDL_SetTextureBlendMode(screenTexture, SDL_BLENDMODE_NONE);
+    }
     
     if (screenTexture == nullptr) {
         std::cerr << "Erreur lors de la création de la texture d'écran: " << SDL_GetError() << std::endl;
@@ -466,6 +502,9 @@ int main(int argc, char* argv[]) {
     // Initialiser l'émulateur uniquement après la création réussie de la fenêtre et du renderer
     static Monster8 m8;
 
+    // Afficher l'écran initial de l'émulateur
+    swapScreen(renderer, screenTexture, m8);
+
     // Mode avec ou sans ROM
     bool romLoaded = false;
     if (!romPath.empty()) {
@@ -475,7 +514,6 @@ int main(int argc, char* argv[]) {
         m8.paper = 0;
         m8.pen = 255;
         m8.ClearScreen();
-        m8.Flip(); // show black immediately
 
         std::cout << "ROM chargée avec succès: " << romPath << std::endl;
         romLoaded = true;
@@ -501,14 +539,18 @@ int main(int argc, char* argv[]) {
     bool showMenu = false;
     int selectedIndex = 0;
     std::vector<std::string> cartridges;
+    bool menuNeedsRedraw = false;
+    bool splashNeedsRedraw = true; // afficher le splash au démarrage
 
     // Boucle principale
     bool quit = false;
-    uint32_t lastTime = SDL_GetTicks();
-    const int FPS = 60;
-    const int frameDelay = 1000 / FPS;
+    const int TARGET_FPS = 30;  // Réduire à 30 FPS pour tester
+    const int FRAME_DELAY = 1000 / TARGET_FPS; // ~33ms par frame
+    uint32_t frameStart = 0;
     
     while (!quit) {
+        frameStart = SDL_GetTicks();
+        
         // Entrées
         bool spacePressed = false, enterPressed = false;
         int menuMove = 0;
@@ -521,69 +563,74 @@ int main(int argc, char* argv[]) {
                 if (!showMenu) {
                     cartridges = listCartridges("./Cartridges");
                     selectedIndex = 0;
-                    showMenu = true; // entrer dans le menu (fond blanc via drawCartridgeMenu)
+                    showMenu = true;
+                    menuNeedsRedraw = true; // forcer le redessin lors de l'entrée dans le menu
+                    splashNeedsRedraw = false; // ne plus afficher le splash
                 } else if (!cartridges.empty()) {
                     // Espace fait défiler les cartouches
                     selectedIndex = (selectedIndex + 1) % (int)cartridges.size();
+                    menuNeedsRedraw = true;
                 }
             }
             if (showMenu) {
                 if (!cartridges.empty()) {
-                    if (menuMove < 0) selectedIndex = (selectedIndex - 1 + (int)cartridges.size()) % (int)cartridges.size();
-                    if (menuMove > 0) selectedIndex = (selectedIndex + 1) % (int)cartridges.size();
-                            if (enterPressed) {
+                    if (menuMove < 0) {
+                        selectedIndex = (selectedIndex - 1 + (int)cartridges.size()) % (int)cartridges.size();
+                        menuNeedsRedraw = true;
+                    }
+                    if (menuMove > 0) {
+                        selectedIndex = (selectedIndex + 1) % (int)cartridges.size();
+                        menuNeedsRedraw = true;
+                    }
+                    
+                    if (enterPressed) {
                         std::string path = std::string("./Cartridges/") + cartridges[selectedIndex];
                         // Reset colors after selecting a cartridge
                         m8.border = 0;
                         m8.paper = 0;
                         m8.pen = 255;
                         m8.ClearScreen();
-                        m8.Flip(); // show black immediately
                         m8.loadROM(path.c_str());
                         std::cout << "ROM chargée avec succès: " << path << std::endl;
                         romLoaded = true;
                         showMenu = false;
+                        menuNeedsRedraw = false;
+                        splashNeedsRedraw = false;
                         if (!audioInitialized) {
                             audioInitialized = true;
                             if (!audioReady) {
                                 std::cerr << "Audio indisponible. L'émulateur continuera sans son." << std::endl;
                             }
                         }
-                    } else {
+                    } else if (menuNeedsRedraw) {
+                        // Redessiner le menu seulement si nécessaire ET si on n'a pas chargé de ROM
                         drawCartridgeMenu(m8, cartridges, selectedIndex);
+                        swapScreen(renderer, screenTexture, m8);
+                        menuNeedsRedraw = false;
                     }
                 }
             } else {
-                // Afficher l'image de chargement
-                renderSplash(renderer, splashTexture, m8);
-            }
-        }
-        
-        // Émuler un cycle uniquement si une ROM est chargée
-        if (romLoaded) {
-            for(int i = 0; i < 1000; i++) {
-                m8.emulateCycle();
-
-                // Dessiner l'écran si nécessaire
-                if (m8.drawFlag) {
-                    renderScreen(renderer, screenTexture, m8);
-                    m8.drawFlag = false;
+                // Afficher l'image de chargement une seule fois
+                if (splashNeedsRedraw) {
+                    renderSplash(renderer, splashTexture, m8);
+                    splashNeedsRedraw = false;
                 }
             }
         } else {
-            // Dessiner l'écran si nécessaire
-            if (m8.drawFlag) {
-                renderScreen(renderer, screenTexture, m8);
-                m8.drawFlag = false;
+            // Émuler un cycle uniquement si une ROM est chargée
+            for(int i = 0; i < 1000; i++) {
+                m8.emulateCycle();
             }
+
+            // Afficher l'écran de l'émulateur
+            swapScreen(renderer, screenTexture, m8);
         }
         
-        // Contrôle de la fréquence d'images
-        uint32_t frameTime = SDL_GetTicks() - lastTime;
-        if (frameDelay > frameTime) {
-            SDL_Delay(frameDelay - frameTime);
+        // Limiter à 60 FPS de manière explicite
+        uint32_t frameTime = SDL_GetTicks() - frameStart;
+        if (frameTime < FRAME_DELAY) {
+            SDL_Delay(FRAME_DELAY - frameTime);
         }
-        lastTime = SDL_GetTicks();
     }
 
     if (splashTexture) {
