@@ -185,58 +185,59 @@ void handleInput(Monster8 &m8, bool &quit, bool &spacePressed, bool &enterPresse
 
 // Fonction pour dessiner l'écran de l'émulateur
 void renderScreen(SDL_Renderer *renderer, Monster8 &m8) {
-    // Effacer l'écran (remplir avec la couleur de border selon la palette)
-    {
-        uint32_t paletteBase = 64000; // palette 0 par défaut
-        uint32_t bi = (static_cast<uint32_t>(m8.border) & 0xFFu) * 3u;
-        uint32_t colorIndex = paletteBase + bi;
-        SDL_SetRenderDrawColor(renderer,
-                               m8.screen[colorIndex + 2],
-                               m8.screen[colorIndex + 1],
-                               m8.screen[colorIndex + 0],
-                               255);
-        SDL_RenderClear(renderer);
-    }
-
-    // Calculer l'échelle entière maximale et centrer l'image
-    int outW = 0, outH = 0;
-    SDL_GetRendererOutputSize(renderer, &outW, &outH);
-
+    static SDL_Texture* screenTexture = nullptr;
+    static uint32_t* pixels = nullptr;
+    
     const int baseW = 320;
     const int baseH = 200;
-
+    
+    // Créer la texture une seule fois
+    if (!screenTexture) {
+        screenTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, baseW, baseH);
+        pixels = new uint32_t[baseW * baseH];
+    }
+    
+    // Convertir le buffer de l'émulateur en pixels ARGB8888
+    uint32_t paletteBase = 64000; // palette 0 par défaut
+    for (int i = 0; i < baseW * baseH; ++i) {
+        uint8_t colorIdx = m8.screen[i];
+        uint32_t colorOffset = paletteBase + (colorIdx * 3);
+        uint8_t r = m8.screen[colorOffset + 2];
+        uint8_t g = m8.screen[colorOffset + 1];
+        uint8_t b = m8.screen[colorOffset + 0];
+        pixels[i] = 0xFF000000 | (r << 16) | (g << 8) | b;
+    }
+    
+    // Mettre à jour la texture
+    SDL_UpdateTexture(screenTexture, nullptr, pixels, baseW * sizeof(uint32_t));
+    
+    // Effacer avec la couleur de border
+    uint32_t bi = (static_cast<uint32_t>(m8.border) & 0xFFu) * 3u;
+    uint32_t colorIndex = paletteBase + bi;
+    SDL_SetRenderDrawColor(renderer,
+                           m8.screen[colorIndex + 2],
+                           m8.screen[colorIndex + 1],
+                           m8.screen[colorIndex + 0],
+                           255);
+    SDL_RenderClear(renderer);
+    
+    // Calculer l'échelle et centrer
+    int outW = 0, outH = 0;
+    SDL_GetRendererOutputSize(renderer, &outW, &outH);
+    
     int scaleX = outW / baseW;
     int scaleY = outH / baseH;
     int scale = (scaleX < scaleY) ? scaleX : scaleY;
-    if (scale < 1) scale = 1; // Éviter 0 si la fenêtre est trop petite
-
+    if (scale < 1) scale = 1;
+    
     int drawW = baseW * scale;
     int drawH = baseH * scale;
     int offsetX = (outW - drawW) / 2;
     int offsetY = (outH - drawH) / 2;
-
-    // Dessiner chaque pixel de l'écran de l'émulateur avec la nouvelle échelle centrée
-    for (int y = 0; y < baseH; ++y) {
-        for (int x = 0; x < baseW; ++x) {
-            // Récupérer la valeur du pixel dans le buffer d'écran de l'émulateur
-            uint8_t pixel = m8.screen[y * baseW + x];
-
-            // aller chercher dans la palette de couleur
-            uint32_t colorIndex = ((uint32_t)pixel) * 3 + 64000;
-
-            SDL_SetRenderDrawColor(renderer, m8.screen[colorIndex + 2], m8.screen[colorIndex + 1], m8.screen[colorIndex + 0], 255);
-
-            // Dessiner le pixel agrandi et centré
-            SDL_Rect pixelRect = {
-                offsetX + x * scale,
-                offsetY + y * scale,
-                scale,
-                scale
-            };
-            SDL_RenderFillRect(renderer, &pixelRect);
-        }
-    }
-
+    
+    SDL_Rect dstRect = { offsetX, offsetY, drawW, drawH };
+    SDL_RenderCopy(renderer, screenTexture, nullptr, &dstRect);
+    
     // Mettre à jour l'écran
     SDL_RenderPresent(renderer);
 }
@@ -334,7 +335,9 @@ int main(int argc, char* argv[]) {
 
     // Initialiser SDL (incluant audio et périphériques) afin d'éviter des réinitialisations tardives
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK) < 0) {
-        std::cerr << "Erreur lors de l'initialisation de SDL: " << SDL_GetError() << std::endl;
+        std::string errorMsg = "Erreur lors de l'initialisation de SDL: " + std::string(SDL_GetError());
+        std::cerr << errorMsg << std::endl;
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Erreur SDL", errorMsg.c_str(), nullptr);
         return 1;
     }
 
@@ -380,13 +383,16 @@ int main(int argc, char* argv[]) {
     }
     bool audioInitialized = audioReady;
     
-    // Parse arguments: -w for windowed; first non-flag is ROM
+    // Parse arguments: -w for windowed, -gpu for GPU acceleration; first non-flag is ROM
     bool windowed = false;
+    bool gpuAccelerated = false;
     std::string romPath;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "-w" || arg == "--windowed") {
             windowed = true;
+        } else if (arg == "-gpu" || arg == "--gpu") {
+            gpuAccelerated = true;
         } else if (romPath.empty()) {
             romPath = arg;
         }
@@ -426,15 +432,37 @@ int main(int argc, char* argv[]) {
     // Masquer le pointeur de souris dès le départ
     SDL_ShowCursor(SDL_DISABLE);
     
-    // Créer le renderer
-    SDL_Renderer* renderer = SDL_CreateRenderer(
-        window,
-        -1,
-        SDL_RENDERER_ACCELERATED
-    );
+    // Créer le renderer selon le mode demandé
+    SDL_Renderer* renderer = nullptr;
+    
+    if (gpuAccelerated) {
+        // Mode GPU: forcer l'utilisation du backend Direct3D11 sur Windows pour de meilleures performances
+        SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
+        std::cout << "Mode GPU activé (accélération matérielle)" << std::endl;
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        
+        if (renderer == nullptr) {
+            std::cerr << "Le rendu accéléré a échoué (" << SDL_GetError() << "), tentative avec le rendu logiciel..." << std::endl;
+            SDL_ClearError();
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+        }
+    } else {
+        // Mode Software (par défaut)
+        std::cout << "Mode Software activé (rendu logiciel)" << std::endl;
+        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+        
+        if (renderer == nullptr) {
+            std::cerr << "Le rendu logiciel a échoué (" << SDL_GetError() << "), tentative avec le rendu accéléré..." << std::endl;
+            SDL_ClearError();
+            SDL_SetHint(SDL_HINT_RENDER_DRIVER, "direct3d11");
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        }
+    }
     
     if (renderer == nullptr) {
-        std::cerr << "Erreur lors de la création du renderer: " << SDL_GetError() << std::endl;
+        std::string errorMsg = "Erreur lors de la création du renderer: " + std::string(SDL_GetError());
+        std::cerr << errorMsg << std::endl;
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Erreur SDL", errorMsg.c_str(), nullptr);
         SDL_DestroyWindow(window);
         if (audioReady) {
             Mix_CloseAudio();
@@ -442,6 +470,19 @@ int main(int argc, char* argv[]) {
         Mix_Quit();
         SDL_Quit();
         return 1;
+    }
+    
+    // Afficher les informations sur le renderer utilisé
+    SDL_RendererInfo rendererInfo;
+    if (SDL_GetRendererInfo(renderer, &rendererInfo) == 0) {
+        std::cout << "Renderer créé avec succès: " << rendererInfo.name << std::endl;
+        if (rendererInfo.flags & SDL_RENDERER_ACCELERATED) {
+            std::cout << "  - Type: ACCÉLÉRÉ (GPU)" << std::endl;
+        } else if (rendererInfo.flags & SDL_RENDERER_SOFTWARE) {
+            std::cout << "  - Type: LOGICIEL (CPU) - ATTENTION: Performances limitées!" << std::endl;
+        }
+    } else {
+        std::cout << "Renderer créé avec succès" << std::endl;
     }
 
     // Initialiser l'émulateur uniquement après la création réussie de la fenêtre et du renderer

@@ -135,8 +135,6 @@ void SaveProject(std::string filename) {
     gtk_text_buffer_get_start_iter(text_buffer, &start_iter);
     gtk_text_buffer_get_end_iter(text_buffer, &end_iter);
 
-    const gint buffer_line_count = gtk_text_buffer_get_line_count(text_buffer);
-
     gchar *raw_text = gtk_text_buffer_get_text(text_buffer, &start_iter, &end_iter, FALSE);
     std::string editor_text = raw_text != NULL ? raw_text : "";
     g_free(raw_text);
@@ -192,8 +190,6 @@ void SaveProject(std::string filename) {
                      << applyCode.musicAddress[i] << '\n'
                      << applyCode.musicLength[i] << '\n';
     }
-
-    project_file << static_cast<int>(buffer_line_count) << '\n';
 
     project_file << editor_text;
     if (!editor_text.empty() && editor_text.back() != '\n') {
@@ -383,9 +379,6 @@ void SaveROM(std::string filename) {
     GtkTextIter end_iter;
     gtk_text_buffer_get_start_iter(text_buffer, &start_iter);
     gtk_text_buffer_get_end_iter(text_buffer, &end_iter);
-
-    //
-    const gint buffer_line_count = gtk_text_buffer_get_line_count(text_buffer);
 
     gchar *raw_text = gtk_text_buffer_get_text(text_buffer, &start_iter, &end_iter, FALSE);
     std::string editor_text = raw_text != NULL ? raw_text : "";
@@ -1204,19 +1197,6 @@ on_project_open_activate(GtkMenuItem *menuitem, gpointer user_data)
                     applyCode.musicLength.push_back(music_len);
                 }
 
-                // Read buffer line count
-                uint32_t saved_buffer_line_count = 0;
-                if (!parse_next_uint32(saved_buffer_line_count)) {
-                    GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                    if (message_label != NULL) {
-                        gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: bad buffer line count");
-                    }
-                    asm_file.close();
-                    g_free(filename);
-                    gtk_widget_destroy(dialog);
-                    return;
-                }
-
                 if (GTK_IS_TEXT_VIEW(text_view)) {
                     GtkTextBuffer *text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
 
@@ -1230,12 +1210,8 @@ on_project_open_activate(GtkMenuItem *menuitem, gpointer user_data)
                         string line;
                         bool first_content_line = true;
                         const char *newline = "\n";
-                        uint32_t lines_loaded = 0;
                         std::string rebuilt_text;
                         while (getline(asm_file, line)) {
-                            if (saved_buffer_line_count != 0 && lines_loaded >= saved_buffer_line_count) {
-                                break;
-                            }
                             if (!first_content_line) {
                                 gtk_text_buffer_insert(text_buffer, &start_iter, newline, -1);
                                 rebuilt_text += '\n';
@@ -1244,7 +1220,6 @@ on_project_open_activate(GtkMenuItem *menuitem, gpointer user_data)
                             rebuilt_text += line;
                             gtk_text_buffer_get_end_iter(text_buffer, &start_iter);
                             first_content_line = false;
-                            ++lines_loaded;
                         }
 
                         g_undo_stack.clear();
@@ -2964,8 +2939,8 @@ void update_tile_image(GtkWidget *combo, GtkWidget *image_widget) {
     uint32_t tileNumber = static_cast<uint32_t>(gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
     
     printf("DEBUG: tileNumber=%d, tilesetCount=%d\n", tileNumber, applyCode.tilesetCount);
-    printf("DEBUG: tilesetAddress.size=%lu, tilesetWidth.size=%lu, tilesetHeight.size=%lu\n", 
-           applyCode.tilesetAddress.size(), applyCode.tilesetWidth.size(), applyCode.tilesetHeight.size());
+    printf("DEBUG: tilesetAddress.size=%llu, tilesetWidth.size=%llu, tilesetHeight.size=%llu\n", 
+           (unsigned long long)applyCode.tilesetAddress.size(), (unsigned long long)applyCode.tilesetWidth.size(), (unsigned long long)applyCode.tilesetHeight.size());
     fflush(stdout);
     
     // Vérifications de sécurité
@@ -3068,7 +3043,7 @@ on_tilesets_more_clicked(GtkButton *button, gpointer user_data)
 void
 open_tile_viewer(GtkWindow *parent_window)
 {
-    printf("DEBUG: open_tile_viewer called, tilesetCount=%d, tilesetPath.size=%lu\n", 
+    printf("DEBUG: open_tile_viewer called, tilesetCount=%d, tilesetPath.size=%zu\n", 
            applyCode.tilesetCount, applyCode.tilesetPath.size());
     fflush(stdout);
     
