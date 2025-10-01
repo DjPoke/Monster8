@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Monster8Editor",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Monster8Editor",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Build Monster8Editor"
+        }
+    ]
+}

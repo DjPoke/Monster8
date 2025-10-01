@@ -1,0 +1,66 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Monster8 (SDL2)",
+            "type": "shell",
+            "command": "/bin/sh",
+            "args": [
+                "-c",
+                "g++ -std=c++17 -O1 -g -fsanitize=address -fno-omit-frame-pointer \"${workspaceFolder}/main.cpp\" \"${workspaceFolder}/M8.cpp\" -o \"${workspaceFolder}/Monster8\" $(sdl2-config --cflags --libs) -lSDL2_mixer -lSDL2_image -fsanitize=address"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "Build Monster8 (Release)",
+            "type": "shell",
+            "command": "/bin/sh",
+            "args": [
+                "-c",
+                "g++ -std=c++17 -O2 -DNDEBUG \"${workspaceFolder}/main.cpp\" \"${workspaceFolder}/M8.cpp\" -o \"${workspaceFolder}/Monster8\" $(sdl2-config --cflags --libs) -lSDL2_mixer -lSDL2_image -s"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++-13 générer le fichier actif",
+            "command": "/usr/bin/g++-13",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Tâche générée par le débogueur."
+        }
+    ]
+}

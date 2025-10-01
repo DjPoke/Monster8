@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/SDL2",
+                "/usr/include"
+            ],
+            "defines": [
+                "LINUX",
+                "_REENTRANT"
+            ],
+            "compilerPath": "/usr/bin/g++-13",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
