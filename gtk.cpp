@@ -161,7 +161,7 @@ void SaveProject(std::string filename) {
 
     project_file << applyCode.spritePath.size() << '\n';
 
-    for(int i = 0; i < applyCode.spritePath.size(); i++) {
+    for(uint32_t i = 0; i < applyCode.spritePath.size(); i++) {
         project_file << applyCode.spritePath[i] << '\n'
                      << applyCode.spriteAddress[i] << '\n'
                      << applyCode.spriteLength[i] << '\n'
@@ -171,7 +171,7 @@ void SaveProject(std::string filename) {
 
     project_file << applyCode.tilesetPath.size() << '\n';
     
-    for(int i = 0; i < applyCode.tilesetPath.size(); i++) {
+    for(uint32_t i = 0; i < applyCode.tilesetPath.size(); i++) {
         project_file << applyCode.tilesetPath[i] << '\n'
                      << applyCode.tilesetAddress[i] << '\n'
                      << applyCode.tilesetLength[i] << '\n';
@@ -179,7 +179,7 @@ void SaveProject(std::string filename) {
 
     project_file << applyCode.soundPath.size() << '\n';
     
-    for(int i = 0; i < applyCode.soundPath.size(); i++) {
+    for(uint32_t i = 0; i < applyCode.soundPath.size(); i++) {
         project_file << applyCode.soundPath[i] << '\n'
                      << applyCode.soundAddress[i] << '\n'
                      << applyCode.soundLength[i] << '\n';
@@ -187,7 +187,7 @@ void SaveProject(std::string filename) {
 
     project_file << applyCode.musicPath.size() << '\n';
     
-    for(int i = 0; i < applyCode.musicPath.size(); i++) {
+    for(uint32_t i = 0; i < applyCode.musicPath.size(); i++) {
         project_file << applyCode.musicPath[i] << '\n'
                      << applyCode.musicAddress[i] << '\n'
                      << applyCode.musicLength[i] << '\n';
@@ -384,6 +384,7 @@ void SaveROM(std::string filename) {
     gtk_text_buffer_get_start_iter(text_buffer, &start_iter);
     gtk_text_buffer_get_end_iter(text_buffer, &end_iter);
 
+    //
     const gint buffer_line_count = gtk_text_buffer_get_line_count(text_buffer);
 
     gchar *raw_text = gtk_text_buffer_get_text(text_buffer, &start_iter, &end_iter, FALSE);
@@ -474,7 +475,7 @@ bool Build(void) {
 
     std::string err = "";
 
-    for(uint32_t i = 0; i < buffer_line_count; i++) {
+    for(uint32_t i = 0; i < (uint32_t)buffer_line_count; i++) {
         // get the line of text from the text view buffer at indice i
         GtkTextIter line_start;
         GtkTextIter line_end;
@@ -511,7 +512,7 @@ bool Build(void) {
         applyCode.lastLabelLine = applyCode.PC;
         applyCode.PC = 0x400;
 
-        for(uint32_t i = 0; i < buffer_line_count; i++) {
+        for(uint32_t i = 0; i < (uint32_t)buffer_line_count; i++) {
             // get the line of text from the text view buffer at indice i
             GtkTextIter line_start;
             GtkTextIter line_end;
@@ -893,8 +894,6 @@ on_project_new_activate(GtkMenuItem *menuitem, gpointer user_data)
 
     for (uint32_t i = 0; i < 0x5000000; i++) {
         applyCode.memory[i] = 0x00;
-
-        uint32_t j = i % 0x10000;
 
         if (i <= 0xffffff) {
             applyCode.label[i][0] = "";
@@ -2078,7 +2077,7 @@ clear_menu_item_accelerator(GtkWidget *item)
         gtk_menu_item_set_accel_path(GTK_MENU_ITEM(item), NULL);
     }
 }
-static void
+static void __attribute__((unused))
 set_menu_accelerator(GtkWidget *item,
                      GtkWidget *toplevel,
                      guint keyval,
@@ -2916,7 +2915,7 @@ open_sprite_viewer(GtkWindow *parent_window)
     gtk_box_pack_start(GTK_BOX(container), sprite_label, FALSE, FALSE, 0);
 
     GtkWidget *sprite_combo = gtk_combo_box_text_new();
-    for (int i = 1; i <= applyCode.spriteCount; i++) {
+    for (uint32_t i = 1; i <= applyCode.spriteCount; i++) {
         std::string sprite_number = std::to_string(i);
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(sprite_combo), sprite_number.c_str());
     }
@@ -2987,7 +2986,7 @@ void update_tile_image(GtkWidget *combo, GtkWidget *image_widget) {
         printf("DEBUG: Initializing tileset dimensions with defaults (16x16)\n");
         applyCode.tilesetWidth.clear();
         applyCode.tilesetHeight.clear();
-        for (int i = 0; i < applyCode.tilesetCount; i++) {
+        for (uint32_t i = 0; i < applyCode.tilesetCount; i++) {
             applyCode.tilesetWidth.push_back(16);   // 16x16 par défaut (comme dans l'importation)
             applyCode.tilesetHeight.push_back(16);
         }
@@ -3099,7 +3098,7 @@ open_tile_viewer(GtkWindow *parent_window)
     gtk_box_pack_start(GTK_BOX(container), tile_label, FALSE, FALSE, 0);
 
     GtkWidget *tile_combo = gtk_combo_box_text_new();
-    for (int i = 1; i <= applyCode.tilesetCount; i++) {
+    for (uint32_t i = 1; i <= applyCode.tilesetCount; i++) {
         std::string tile_number = std::to_string(i);
         gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(tile_combo), tile_number.c_str());
     }

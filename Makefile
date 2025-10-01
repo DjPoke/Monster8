@@ -23,7 +23,7 @@ endif
 BUILD_TYPE ?= Debug
 
 # Répertoires de build
-BUILD_DIR := build/$(BUILD_TYPE)
+BUILD_DIR := .
 
 # Compilateur et flags de base
 CXX := g++
@@ -67,23 +67,19 @@ all: $(TARGET_PATH)
 	@echo "Executable: $(TARGET_PATH)"
 	@echo "==================================="
 
-# Création du répertoire de build
-$(BUILD_DIR):
-	@mkdir -p $(BUILD_DIR)
-
 # Compilation de l'exécutable
-$(TARGET_PATH): $(BUILD_DIR) $(OBJECTS) $(RC_OBJECT_PATH)
+$(TARGET_PATH): $(OBJECTS) $(RC_OBJECT_PATH)
 	@echo "Linking $(TARGET_PATH)..."
 	$(CXX) $(CXXFLAGS) $(OBJECTS) $(RC_OBJECT_PATH) -o $@ $(PKG_LIBS)
 
 # Compilation des fichiers objets
-$(BUILD_DIR)/%.o: %.cpp $(HEADERS) | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.cpp $(HEADERS)
 	@echo "Compiling $< ($(BUILD_TYPE))..."
 	$(CXX) $(CXXFLAGS) $(PKG_CFLAGS) -c $< -o $@
 
 # Compilation du fichier de ressources Windows
 ifeq ($(OS),Windows_NT)
-$(RC_OBJECT_PATH): $(RC_FILE) | $(BUILD_DIR)
+$(RC_OBJECT_PATH): $(RC_FILE)
 	@echo "Compiling Windows resources..."
 	$(WINDRES) $(RC_FILE) -O coff -o $(RC_OBJECT_PATH)
 endif
@@ -97,22 +93,20 @@ release:
 
 # Nettoyage du build actuel
 clean:
-	@echo "Cleaning $(BUILD_TYPE) build files..."
+	@echo "Cleaning build files..."
 ifeq ($(OS),Windows_NT)
-	-$(RMDIR) "$(BUILD_DIR)" 2>nul
+	-$(RM) "$(TARGET_PATH)" 2>nul
+	-$(RM) "$(BUILD_DIR)/*.o" 2>nul
+	-$(RM) "$(RC_OBJECT_PATH)" 2>nul
 else
-	$(RMDIR) $(BUILD_DIR)
+	$(RM) $(TARGET_PATH)
+	$(RM) $(BUILD_DIR)/*.o
+	$(RM) $(RC_OBJECT_PATH)
 endif
 	@echo "Clean complete!"
 
 # Nettoyage de tous les builds
-clean-all:
-	@echo "Cleaning all build files..."
-ifeq ($(OS),Windows_NT)
-	-$(RMDIR) "build" 2>nul
-else
-	$(RMDIR) build
-endif
+clean-all: clean
 	@echo "All builds cleaned!"
 
 # Nettoyage complet (inclut les fichiers de backup)
