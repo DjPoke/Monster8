@@ -4,9 +4,9 @@
         {
             "label": "Build Monster8Editor (Debug)",
             "type": "shell",
-            "command": "make",
+            "command": "${workspaceFolder}/build.sh",
             "args": [
-                "debug"
+                "--debug"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -26,9 +26,9 @@
         {
             "label": "Build Monster8Editor (Release)",
             "type": "shell",
-            "command": "make",
+            "command": "${workspaceFolder}/build.sh",
             "args": [
-                "release"
+                "--release"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

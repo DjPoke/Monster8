@@ -18,7 +18,7 @@
 #include <filesystem>
 
 #include "code.hpp"
-#include "gtk.hpp"
+#include "gtk_p1.hpp"
 
 using namespace std;
 
@@ -137,9 +137,14 @@ on_activate(GtkApplication* app)
     GtkWidget *medias_import_music_item = gtk_menu_item_new_with_label("Import music");
     GtkWidget *medias_informations_item = gtk_menu_item_new_with_label("Medias Informations");
 
+    GtkWidget *tools_menu_item = gtk_menu_item_new_with_label("Tools");
+    GtkWidget *tools_menu = gtk_menu_new();
+    GtkWidget *tools_level_editor_item = gtk_menu_item_new_with_label("Level editor");
+    GtkWidget *tools_sentence_editor_item = gtk_menu_item_new_with_label("Sentence editor");
+
     GtkWidget *settings_menu_item = gtk_menu_item_new_with_label("Settings");
     GtkWidget *settings_menu = gtk_menu_new();
-    GtkWidget *settings_setup_emulator_item = gtk_menu_item_new_with_label("Setup Monster8 emulator");
+    GtkWidget *settings_setup_emulator_item = gtk_menu_item_new_with_label("Set Monster8 emulator path");
 
     GtkWidget *informations_menu_item = gtk_menu_item_new_with_label("?");
     GtkWidget *informations_menu = gtk_menu_new();
@@ -190,6 +195,9 @@ on_activate(GtkApplication* app)
     gtk_menu_shell_append(GTK_MENU_SHELL(medias_menu), medias_separator2);
     gtk_menu_shell_append(GTK_MENU_SHELL(medias_menu), medias_informations_item);
 
+    gtk_menu_shell_append(GTK_MENU_SHELL(tools_menu), tools_level_editor_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(tools_menu), tools_sentence_editor_item);
+
     gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_setup_emulator_item);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(informations_menu), informations_about_item);
@@ -198,6 +206,7 @@ on_activate(GtkApplication* app)
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(edit_menu_item), edit_menu);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(compiler_menu_item), compiler_menu);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(medias_menu_item), medias_menu);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(tools_menu_item), tools_menu);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_menu_item), settings_menu);
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(informations_menu_item), informations_menu);
 
@@ -205,6 +214,7 @@ on_activate(GtkApplication* app)
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), edit_menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), compiler_menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), medias_menu_item);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), tools_menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), settings_menu_item);
     gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), informations_menu_item);
 
@@ -284,6 +294,9 @@ on_activate(GtkApplication* app)
     g_signal_connect(medias_informations_item, "activate", G_CALLBACK(on_medias_informations_activate), text_view);
 
     g_signal_connect(settings_setup_emulator_item, "activate", G_CALLBACK(on_settings_setup_emulator_activate), message_status_label);
+
+    g_signal_connect(tools_level_editor_item, "activate", G_CALLBACK(on_tools_level_editor_activate), message_status_label);
+    g_signal_connect(tools_sentence_editor_item, "activate", G_CALLBACK(on_tools_sentence_editor_activate), message_status_label);
 
     g_signal_connect(informations_about_item, "activate", G_CALLBACK(on_informations_about_activate), text_view);
 

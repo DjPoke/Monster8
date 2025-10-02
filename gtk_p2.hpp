@@ -1,5 +1,5 @@
-#ifndef GTK_FUNCTIONS_HPP
-#define GTK_FUNCTIONS_HPP
+#ifndef GTK_P2_FUNCTIONS_HPP
+#define GTK_P2_FUNCTIONS_HPP
 
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "code.hpp"
+#include "gtk_p1.hpp"
 
 // External variable declarations
 extern ApplyCode applyCode;
@@ -41,13 +42,6 @@ struct Accelerator {
 bool prompt_for_frame_dimensions(GtkWindow *parent_window, gint image_width, gint image_height, gint &frame_width, gint &frame_height);
 void ShowMediaStatus(GtkWindow *parent_window);
 
-// File operations
-void SaveProject(std::string filename);
-std::string SaveProjectAs(GtkWindow *parent_window);
-void SaveROM(std::string filename);
-void LoadROM(std::string filename);
-std::string SaveROMAs(GtkWindow *parent_window);
-
 // Text editor functions
 void ensure_highlight_tags(GtkTextBuffer *buffer);
 void apply_editor_highlighting(GtkTextBuffer *buffer);
@@ -76,9 +70,6 @@ void on_cursor_position_notify(GObject *object, GParamSpec *pspec, gpointer user
 void bind_menu_accelerators(GtkWidget* window,
                             const std::vector<GtkWidget*>& items,
                             const std::vector<Accelerator>& accels);
-
-// Build function
-bool Build(void);
 
 // Menu callback functions
 void on_project_new_activate(GtkMenuItem *menuitem, gpointer user_data);
@@ -109,6 +100,9 @@ void on_medias_import_music_activate(GtkMenuItem *menuitem, gpointer user_data);
 void on_medias_informations_activate(GtkMenuItem *menuitem, gpointer user_data);
 
 void on_settings_setup_emulator_activate(GtkMenuItem *menuitem, gpointer user_data);
+
+void on_tools_level_editor_activate(GtkMenuItem *menuitem, gpointer user_data);
+void on_tools_sentence_editor_activate(GtkMenuItem *menuitem, gpointer user_data);
 
 void on_informations_about_activate(GtkMenuItem *menuitem, gpointer user_data);
 

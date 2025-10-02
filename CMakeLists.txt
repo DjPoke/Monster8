@@ -40,14 +40,16 @@ set(SOURCES
     main.cpp
     code.cpp
     functions.cpp
-    gtk.cpp
+    gtk_p1.cpp
+    gtk_p2.cpp
 )
 
 # Header files (for IDE integration)
 set(HEADERS
     code.hpp
     functions.hpp
-    gtk.hpp
+    gtk_p1.hpp
+    gtk_p2.hpp
 )
 
 # Windows resource file
