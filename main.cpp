@@ -140,7 +140,6 @@ on_activate(GtkApplication* app)
     GtkWidget *tools_menu_item = gtk_menu_item_new_with_label("Tools");
     GtkWidget *tools_menu = gtk_menu_new();
     GtkWidget *tools_level_editor_item = gtk_menu_item_new_with_label("Level editor");
-    GtkWidget *tools_sentence_editor_item = gtk_menu_item_new_with_label("Sentence editor");
 
     GtkWidget *settings_menu_item = gtk_menu_item_new_with_label("Settings");
     GtkWidget *settings_menu = gtk_menu_new();
@@ -196,7 +195,6 @@ on_activate(GtkApplication* app)
     gtk_menu_shell_append(GTK_MENU_SHELL(medias_menu), medias_informations_item);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(tools_menu), tools_level_editor_item);
-    gtk_menu_shell_append(GTK_MENU_SHELL(tools_menu), tools_sentence_editor_item);
 
     gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), settings_setup_emulator_item);
 
@@ -296,7 +294,6 @@ on_activate(GtkApplication* app)
     g_signal_connect(settings_setup_emulator_item, "activate", G_CALLBACK(on_settings_setup_emulator_activate), message_status_label);
 
     g_signal_connect(tools_level_editor_item, "activate", G_CALLBACK(on_tools_level_editor_activate), message_status_label);
-    g_signal_connect(tools_sentence_editor_item, "activate", G_CALLBACK(on_tools_sentence_editor_activate), message_status_label);
 
     g_signal_connect(informations_about_item, "activate", G_CALLBACK(on_informations_about_activate), text_view);
 

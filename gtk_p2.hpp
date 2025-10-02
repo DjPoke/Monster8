@@ -102,7 +102,6 @@ void on_medias_informations_activate(GtkMenuItem *menuitem, gpointer user_data);
 void on_settings_setup_emulator_activate(GtkMenuItem *menuitem, gpointer user_data);
 
 void on_tools_level_editor_activate(GtkMenuItem *menuitem, gpointer user_data);
-void on_tools_sentence_editor_activate(GtkMenuItem *menuitem, gpointer user_data);
 
 void on_informations_about_activate(GtkMenuItem *menuitem, gpointer user_data);
 

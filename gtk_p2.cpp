@@ -2204,42 +2204,6 @@ on_tools_level_editor_activate(GtkMenuItem *menuitem, gpointer user_data)
 }
 
 void
-on_tools_sentence_editor_activate(GtkMenuItem *menuitem, gpointer user_data)
-{
-    (void)menuitem;
-    GtkWidget *message_label = GTK_WIDGET(user_data);
-
-    if (message_label != NULL) {
-        gtk_label_set_text(GTK_LABEL(message_label), "Sentence editor - Coming soon");
-    }
-
-    GtkWidget *text_view = main_text_view;
-    GtkWindow *parent_window = NULL;
-
-    if (GTK_IS_WIDGET(text_view)) {
-        GtkWidget *toplevel = gtk_widget_get_toplevel(text_view);
-        if (GTK_IS_WINDOW(toplevel)) {
-            parent_window = GTK_WINDOW(toplevel);
-        }
-    }
-
-    GtkWidget *dialog = gtk_message_dialog_new(parent_window,
-                                               GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "Sentence Editor");
-    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog),
-                                             "The Sentence Editor will be available soon.");
-    
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-
-    if (message_label != NULL) {
-        gtk_label_set_text(GTK_LABEL(message_label), "Ready");
-    }
-}
-
-void
 on_informations_about_activate(GtkMenuItem *menuitem, gpointer user_data)
 {
     (void)menuitem;
