@@ -483,17 +483,6 @@ std::string SaveROMAs(GtkWindow *parent_window) {
     gtk_widget_destroy(dialog);
 
     if (!selected_path.empty()) {
-        // Convertir le chemin absolu en chemin relatif
-        try {
-            std::filesystem::path abs_path(selected_path);
-            std::filesystem::path current_dir = std::filesystem::current_path();
-            std::filesystem::path relative_path = std::filesystem::relative(abs_path, current_dir);
-            selected_path = relative_path.string();
-        } catch (const std::filesystem::filesystem_error& ex) {
-            // En cas d'erreur, garder le chemin original
-            std::cout << "Erreur lors de la conversion du chemin: " << ex.what() << std::endl;
-        }
-
         applyCode.binFile = selected_path;
     }
 
