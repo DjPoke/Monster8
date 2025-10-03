@@ -2,14 +2,10 @@
 
 
 ApplyCode::ApplyCode()
-    :   spriteCount(0),
+    :   spritesheetCount(0),
         tilesetCount(0),
         soundCount(0),
         musicCount(0),
-        nextSpriteAddr(0x000000),
-        nextTilesetAddr(0x000000),
-        nextSoundAddr(0x000000),
-        nextMusicAddr(0x000000),
         pass(0),
         lastLabelLine(0),
           PC(0x400),
@@ -18,7 +14,7 @@ ApplyCode::ApplyCode()
         emuFile(""),
         statusBarUpdater(nullptr)
 {
-    spritePath.clear();
+    spritesheetPath.clear();
     spriteAddress.clear();
     spriteLength.clear();
     spriteWidth.clear();
@@ -26,8 +22,8 @@ ApplyCode::ApplyCode()
     tilesetPath.clear();
     tilesetAddress.clear();
     tilesetLength.clear();
-    tilesetWidth.clear();
-    tilesetHeight.clear();
+    tileWidth.clear();
+    tileHeight.clear();
     soundPath.clear();
     soundAddress.clear();
     soundLength.clear();

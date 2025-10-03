@@ -42,6 +42,7 @@ set(SOURCES
     functions.cpp
     gtk_p1.cpp
     gtk_p2.cpp
+    level_editor.cpp
 )
 
 # Header files (for IDE integration)
@@ -50,6 +51,7 @@ set(HEADERS
     functions.hpp
     gtk_p1.hpp
     gtk_p2.hpp
+    level_editor.hpp
 )
 
 # Windows resource file

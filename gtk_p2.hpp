@@ -24,12 +24,14 @@ extern GtkTextSearchFlags g_last_search_flags;
 
 // Structures pour les données des callbacks
 struct SpriteViewerData {
-    GtkWidget *combo;
+    GtkWidget *spritesheet_combo;
+    GtkWidget *sprite_combo;
     GtkWidget *image_widget;
 };
 
 struct TileViewerData {
-    GtkWidget *combo;
+    GtkWidget *tileset_combo;
+    GtkWidget *tile_combo;
     GtkWidget *image_widget;
 };
 
@@ -52,13 +54,17 @@ void on_search_dialog_destroy(GtkWidget *widget, gpointer user_data);
 // Sprite viewer functions
 void open_sprite_viewer(GtkWindow *parent_window);
 void on_sprites_more_clicked(GtkButton *button, gpointer user_data);
-void update_sprite_image(GtkWidget *combo, GtkWidget *image_widget);
+void update_sprite_combo(GtkWidget *spritesheet_combo, GtkWidget *sprite_combo);
+void update_sprite_image(GtkWidget *spritesheet_combo, GtkWidget *sprite_combo, GtkWidget *image_widget);
+void on_spritesheet_combo_changed(GtkComboBox *combo, gpointer user_data);
 void on_sprite_combo_changed(GtkComboBox *combo, gpointer user_data);
 
 // Tile viewer functions  
 void open_tile_viewer(GtkWindow *parent_window);
 void on_tilesets_more_clicked(GtkButton *button, gpointer user_data);
-void update_tile_image(GtkWidget *combo, GtkWidget *image_widget);
+void update_tile_combo(GtkWidget *tileset_combo, GtkWidget *tile_combo);
+void update_tile_image(GtkWidget *tileset_combo, GtkWidget *tile_combo, GtkWidget *image_widget);
+void on_tileset_combo_changed(GtkComboBox *combo, gpointer user_data);
 void on_tile_combo_changed(GtkComboBox *combo, gpointer user_data);
 
 // Cursor and text functions

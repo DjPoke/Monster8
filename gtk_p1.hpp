@@ -23,6 +23,7 @@ extern std::string g_last_search_text;
 extern GtkTextSearchFlags g_last_search_flags;
 
 // File operations
+void OpenProject(GtkWindow *parent_window, GtkWidget *text_view);
 void SaveProject(std::string filename);
 std::string SaveProjectAs(GtkWindow *parent_window);
 void SaveROM(std::string filename);

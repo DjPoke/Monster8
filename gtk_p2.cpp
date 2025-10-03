@@ -10,6 +10,7 @@
 #include <cmath>
 
 #include "gtk_p1.hpp"
+#include "level_editor.hpp"
 
 using namespace std;
 
@@ -404,22 +405,12 @@ on_project_new_activate(GtkMenuItem *menuitem, gpointer user_data)
     applyCode.asmFile = "";
     applyCode.binFile = "";
 
-    applyCode.spriteCount = 0;
+    applyCode.spritesheetCount = 0;
     applyCode.tilesetCount = 0;
     applyCode.soundCount = 0;
     applyCode.musicCount = 0;
 
-    applyCode.nextSpriteAddr = 0x000000;
-    applyCode.nextTilesetAddr = 0x000000;
-    applyCode.nextSoundAddr = 0x000000;
-    applyCode.nextMusicAddr = 0x000000;
-
-    applyCode.spriteCount = 0;
-    applyCode.tilesetCount = 0;
-    applyCode.soundCount = 0;
-    applyCode.musicCount = 0;
-
-    applyCode.spritePath.clear();
+    applyCode.spritesheetPath.clear();
     applyCode.spriteAddress.clear();
     applyCode.spriteLength.clear();
     applyCode.spriteWidth.clear();
@@ -455,305 +446,7 @@ on_project_open_activate(GtkMenuItem *menuitem, gpointer user_data)
         }
     }
 
-    GtkWidget *dialog = gtk_file_chooser_dialog_new("Open Asm8 Project",
-                                                    parent_window,
-                                                    GTK_FILE_CHOOSER_ACTION_OPEN,
-                                                    "_Cancel", GTK_RESPONSE_CANCEL,
-                                                    "_Open", GTK_RESPONSE_ACCEPT,
-                                                    NULL);
-
-    GtkFileFilter *filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(filter, "Asm8 files (*.asm8)");
-    gtk_file_filter_add_pattern(filter, "*.asm8");
-    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-        char *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-
-        if (filename != NULL) {
-            ifstream asm_file(filename);
-
-            if (asm_file) {
-                std::string bin_path_line;
-                std::getline(asm_file, bin_path_line);
-                
-                // Supprimer espaceopen_s et retour chariot en fin de ligne
-                while (!bin_path_line.empty() && (isspace(bin_path_line.back()) || bin_path_line.back() == '\r' || bin_path_line.back() == '\n')) {
-                    bin_path_line.pop_back();
-                }
-
-                if (!bin_path_line.empty()) {
-                    applyCode.binFile = bin_path_line;
-
-                    LoadROM(applyCode.binFile);
-                }
-
-                auto parse_next_uint32 = [&](uint32_t &output) -> bool {
-                    string line;
-                    if (!getline(asm_file, line)) {
-                        return false;
-                    }
-
-                    errno = 0;
-                    char *end_ptr = nullptr;
-                    unsigned long value = strtoul(line.c_str(), &end_ptr, 10);
-
-                    if (errno != 0 || end_ptr == line.c_str()) {
-                        return false;
-                    }
-
-                    while (*end_ptr != '\0' && isspace(static_cast<unsigned char>(*end_ptr))) {
-                        ++end_ptr;
-                    }
-
-                    if (*end_ptr != '\0') {
-                        return false;
-                    }
-
-                    if (value > numeric_limits<uint32_t>::max()) {
-                        return false;
-                    }
-
-                    output = static_cast<uint32_t>(value);
-                    return true;
-                };
-
-                // Clear existing vectors
-                applyCode.spritePath.clear();
-                applyCode.spriteAddress.clear();
-                applyCode.spriteLength.clear();
-                applyCode.spriteWidth.clear();
-                applyCode.spriteHeight.clear();
-                applyCode.tilesetPath.clear();
-                applyCode.tilesetAddress.clear();
-                applyCode.tilesetLength.clear();
-                applyCode.tilesetWidth.clear();
-                applyCode.tilesetHeight.clear();
-                applyCode.soundPath.clear();
-                applyCode.soundAddress.clear();
-                applyCode.soundLength.clear();
-                applyCode.musicPath.clear();
-                applyCode.musicAddress.clear();
-                applyCode.musicLength.clear();
-
-                if (!parse_next_uint32(applyCode.spriteCount) ||
-                    !parse_next_uint32(applyCode.tilesetCount) ||
-                    !parse_next_uint32(applyCode.soundCount) ||
-                    !parse_next_uint32(applyCode.musicCount) ||
-                    !parse_next_uint32(applyCode.nextSpriteAddr) ||
-                    !parse_next_uint32(applyCode.nextTilesetAddr) ||
-                    !parse_next_uint32(applyCode.nextSoundAddr) ||
-                    !parse_next_uint32(applyCode.nextMusicAddr)) {
-                    GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                    if (message_label != NULL) {
-                        gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: bad header values");
-                    }
-                    asm_file.close();
-                    g_free(filename);
-                    gtk_widget_destroy(dialog);
-                    return;
-                }
-
-                // Read sprite data
-                uint32_t sprite_vector_size = 0;
-                if (!parse_next_uint32(sprite_vector_size)) {
-                    GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                    if (message_label != NULL) {
-                        gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: bad sprite vector size");
-                    }
-                    asm_file.close();
-                    g_free(filename);
-                    gtk_widget_destroy(dialog);
-                    return;
-                }
-
-                for (uint32_t i = 0; i < sprite_vector_size; i++) {
-                    string sprite_path, sprite_addr_str, sprite_len_str, sprite_width_str, sprite_height_str;
-                    if (!getline(asm_file, sprite_path) ||
-                        !getline(asm_file, sprite_addr_str) ||
-                        !getline(asm_file, sprite_len_str) ||
-                        !getline(asm_file, sprite_width_str) ||
-                        !getline(asm_file, sprite_height_str)) {
-                        GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                        if (message_label != NULL) {
-                            gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: incomplete sprite data");
-                        }
-                        asm_file.close();
-                        g_free(filename);
-                        gtk_widget_destroy(dialog);
-                        return;
-                    }
-                    
-                    uint32_t sprite_addr = std::stoul(sprite_addr_str);
-                    uint32_t sprite_len = std::stoul(sprite_len_str);
-                    uint32_t sprite_width = std::stoul(sprite_width_str);
-                    uint32_t sprite_height = std::stoul(sprite_height_str);
-                    
-                    applyCode.spritePath.push_back(sprite_path);
-                    applyCode.spriteAddress.push_back(sprite_addr);
-                    applyCode.spriteLength.push_back(sprite_len);
-                    applyCode.spriteWidth.push_back(sprite_width);
-                    applyCode.spriteHeight.push_back(sprite_height);
-                }
-
-                // Read tileset data
-                uint32_t tileset_vector_size = 0;
-                if (!parse_next_uint32(tileset_vector_size)) {
-                    GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                    if (message_label != NULL) {
-                        gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: bad tileset vector size");
-                    }
-                    asm_file.close();
-                    g_free(filename);
-                    gtk_widget_destroy(dialog);
-                    return;
-                }
-
-                for (uint32_t i = 0; i < tileset_vector_size; i++) {
-                    string tileset_path, tileset_addr_str, tileset_len_str;
-                    if (!getline(asm_file, tileset_path) ||
-                        !getline(asm_file, tileset_addr_str) ||
-                        !getline(asm_file, tileset_len_str)) {
-                        GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                        if (message_label != NULL) {
-                            gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: incomplete tileset data");
-                        }
-                        asm_file.close();
-                        g_free(filename);
-                        gtk_widget_destroy(dialog);
-                        return;
-                    }
-                    
-                    uint32_t tileset_addr = std::stoul(tileset_addr_str);
-                    uint32_t tileset_len = std::stoul(tileset_len_str);
-                    
-                    applyCode.tilesetPath.push_back(tileset_path);
-                    applyCode.tilesetAddress.push_back(tileset_addr);
-                    applyCode.tilesetLength.push_back(tileset_len);
-                }
-
-                // Read sound data
-                uint32_t sound_vector_size = 0;
-                if (!parse_next_uint32(sound_vector_size)) {
-                    GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                    if (message_label != NULL) {
-                        gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: bad sound vector size");
-                    }
-                    asm_file.close();
-                    g_free(filename);
-                    gtk_widget_destroy(dialog);
-                    return;
-                }
-
-                for (uint32_t i = 0; i < sound_vector_size; i++) {
-                    string sound_path, sound_addr_str, sound_len_str;
-                    if (!getline(asm_file, sound_path) ||
-                        !getline(asm_file, sound_addr_str) ||
-                        !getline(asm_file, sound_len_str)) {
-                        GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                        if (message_label != NULL) {
-                            gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: incomplete sound data");
-                        }
-                        asm_file.close();
-                        g_free(filename);
-                        gtk_widget_destroy(dialog);
-                        return;
-                    }
-                    
-                    uint32_t sound_addr = std::stoul(sound_addr_str);
-                    uint32_t sound_len = std::stoul(sound_len_str);
-                    
-                    applyCode.soundPath.push_back(sound_path);
-                    applyCode.soundAddress.push_back(sound_addr);
-                    applyCode.soundLength.push_back(sound_len);
-                }
-
-                // Read music data
-                uint32_t music_vector_size = 0;
-                if (!parse_next_uint32(music_vector_size)) {
-                    GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                    if (message_label != NULL) {
-                        gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: bad music vector size");
-                    }
-                    asm_file.close();
-                    g_free(filename);
-                    gtk_widget_destroy(dialog);
-                    return;
-                }
-
-                for (uint32_t i = 0; i < music_vector_size; i++) {
-                    string music_path, music_addr_str, music_len_str;
-                    if (!getline(asm_file, music_path) ||
-                        !getline(asm_file, music_addr_str) ||
-                        !getline(asm_file, music_len_str)) {
-                        GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                        if (message_label != NULL) {
-                            gtk_label_set_text(GTK_LABEL(message_label), "Invalid Asm8 file: incomplete music data");
-                        }
-                        asm_file.close();
-                        g_free(filename);
-                        gtk_widget_destroy(dialog);
-                        return;
-                    }
-                    
-                    uint32_t music_addr = std::stoul(music_addr_str);
-                    uint32_t music_len = std::stoul(music_len_str);
-                    
-                    applyCode.musicPath.push_back(music_path);
-                    applyCode.musicAddress.push_back(music_addr);
-                    applyCode.musicLength.push_back(music_len);
-                }
-
-                if (GTK_IS_TEXT_VIEW(text_view)) {
-                    GtkTextBuffer *text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-
-                    if (text_buffer != NULL) {
-                        GtkTextIter start_iter;
-                        GtkTextIter end_iter;
-                        gtk_text_buffer_get_start_iter(text_buffer, &start_iter);
-                        gtk_text_buffer_get_end_iter(text_buffer, &end_iter);
-                        gtk_text_buffer_delete(text_buffer, &start_iter, &end_iter);
-
-                        string line;
-                        bool first_content_line = true;
-                        const char *newline = "\n";
-                        std::string rebuilt_text;
-                        while (getline(asm_file, line)) {
-                            if (!first_content_line) {
-                                gtk_text_buffer_insert(text_buffer, &start_iter, newline, -1);
-                                rebuilt_text += '\n';
-                            }
-                            gtk_text_buffer_insert(text_buffer, &start_iter, line.c_str(), -1);
-                            rebuilt_text += line;
-                            gtk_text_buffer_get_end_iter(text_buffer, &start_iter);
-                            first_content_line = false;
-                        }
-
-                        g_undo_stack.clear();
-                        g_redo_stack.clear();
-                        g_current_text = rebuilt_text;
-
-                        apply_editor_highlighting(text_buffer);
-
-                        gtk_text_buffer_get_start_iter(text_buffer, &start_iter);
-                        gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(text_view), &start_iter, 0.0, FALSE, 0.0, 0.0);
-
-                        applyCode.asmFile = filename;
-
-                        GtkWidget *message_label = GTK_WIDGET(g_object_get_data(G_OBJECT(text_view), "message-status-label"));
-                        if (message_label != NULL) {
-                            gtk_label_set_text(GTK_LABEL(message_label), "Asm8 file loaded");
-                        }
-                    }
-                }
-            }
-
-            asm_file.close();
-            g_free(filename);
-        }
-    }
-
-    gtk_widget_destroy(dialog);
+    OpenProject(parent_window, text_view);
 }
 
 void
@@ -1699,14 +1392,18 @@ on_medias_import_spritesheet_activate(GtkMenuItem *menuitem, gpointer user_data)
     GtkWidget *entry = gtk_entry_new();
     gtk_entry_set_max_length(GTK_ENTRY(entry), 8); // limit to 32-bit hex
 
-    gtk_entry_set_text(GTK_ENTRY(entry), Hex(applyCode.nextSpriteAddr).c_str());
+    uint32_t addr = 0;
+
+    for(uint32_t i = 0; i < applyCode.spritesheetCount; i++) {
+        addr += applyCode.spritesheetLength[i];
+    }
+    
+    gtk_entry_set_text(GTK_ENTRY(entry), Hex(addr).c_str());
 
     gtk_box_pack_start(GTK_BOX(content_area), prompt_label, FALSE, FALSE, 4);
     gtk_box_pack_start(GTK_BOX(content_area), entry, FALSE, FALSE, 4);
 
     gtk_widget_show_all(address_dialog);
-
-    uint32_t addr = 0;
 
     gint response = gtk_dialog_run(GTK_DIALOG(address_dialog));
 
@@ -1723,8 +1420,6 @@ on_medias_import_spritesheet_activate(GtkMenuItem *menuitem, gpointer user_data)
     }
 
     gtk_widget_destroy(address_dialog);
-
-    uint32_t addr0 = addr;
 
     // Open the spritesheet file chooser
     GtkWidget *spritesheet_dialog = gtk_file_chooser_dialog_new("Import spritesheet",
@@ -1782,20 +1477,41 @@ on_medias_import_spritesheet_activate(GtkMenuItem *menuitem, gpointer user_data)
             } else if (image_width % frame_width != 0 || image_height % frame_height != 0) {
                 gtk_label_set_text(GTK_LABEL(message_label), "Wrong frame or sprite sheet size");
             } else {
-                uint32_t y = 0;
+                // Calculate number of sprites (frames) in the spritesheet
+                uint32_t frames_x = image_width / frame_width;
+                uint32_t frames_y = image_height / frame_height;
+                uint32_t total_sprites = frames_x * frames_y;
 
+                // Add spritesheet metadata
+                applyCode.spritesheetPath.push_back(filename);
+                applyCode.spritesheetAddress.push_back(addr);
+                applyCode.spritesheetLength.push_back(image_width * image_height);
+                applyCode.spritesheetWidth.push_back(image_width);
+                applyCode.spritesheetHeight.push_back(image_height);
+                
+                // Store sprite count for this spritesheet
+                applyCode.spriteCount.push_back(total_sprites);
+
+                // Initialize vectors for this spritesheet's sprites
+                applyCode.spriteAddress.push_back(std::vector<uint32_t>());
+                applyCode.spriteLength.push_back(std::vector<uint32_t>());
+                applyCode.spriteWidth.push_back(std::vector<uint32_t>());
+                applyCode.spriteHeight.push_back(std::vector<uint32_t>());
+
+                uint32_t spritesheet_index = applyCode.spritesheetCount;
+                applyCode.spritesheetCount++;
+
+                // Extract each sprite from the spritesheet
+                uint32_t y = 0;
                 while (y < static_cast<uint32_t>(image_height)) {
                     uint32_t x = 0;
 
                     while (x < static_cast<uint32_t>(image_width)) {
-                        // fill sprite infos
-                        applyCode.spriteCount++;
-
-                        applyCode.spritePath.push_back(filename);
-                        applyCode.spriteAddress.push_back(addr);
-                        applyCode.spriteLength.push_back(frame_width * frame_height);
-                        applyCode.spriteWidth.push_back(frame_width);
-                        applyCode.spriteHeight.push_back(frame_height);
+                        // Store individual sprite data
+                        applyCode.spriteAddress[spritesheet_index].push_back(addr);
+                        applyCode.spriteLength[spritesheet_index].push_back(frame_width * frame_height);
+                        applyCode.spriteWidth[spritesheet_index].push_back(frame_width);
+                        applyCode.spriteHeight[spritesheet_index].push_back(frame_height);
 
                         addr = CopyImageToRaw(pixbuf, addr + 0x1000000, x, y, frame_width, frame_height) - 0x1000000;
                         
@@ -1809,8 +1525,7 @@ on_medias_import_spritesheet_activate(GtkMenuItem *menuitem, gpointer user_data)
                     y += static_cast<uint32_t>(frame_height);
                 }
 
-                // new addr
-                applyCode.nextSpriteAddr = addr0 + addr;
+                gtk_label_set_text(GTK_LABEL(message_label), "Spritesheet imported successfully");
             }
 
             g_object_unref(pixbuf);
@@ -1849,14 +1564,17 @@ on_medias_import_tileset_activate(GtkMenuItem *menuitem, gpointer user_data)
     GtkWidget *entry = gtk_entry_new();
     gtk_entry_set_max_length(GTK_ENTRY(entry), 8); // limit to 32-bit hex
 
-    gtk_entry_set_text(GTK_ENTRY(entry), Hex(applyCode.nextTilesetAddr).c_str());
+    uint32_t addr = 0;
+    for(uint32_t i = 0; i < applyCode.tilesetCount; i++) {
+        addr += applyCode.tilesetLength[i];
+    }
+    
+    gtk_entry_set_text(GTK_ENTRY(entry), Hex(addr).c_str());
 
     gtk_box_pack_start(GTK_BOX(content_area), prompt_label, FALSE, FALSE, 4);
     gtk_box_pack_start(GTK_BOX(content_area), entry, FALSE, FALSE, 4);
 
     gtk_widget_show_all(address_dialog);
-
-    uint32_t addr = 0;
 
     gint response = gtk_dialog_run(GTK_DIALOG(address_dialog));
 
@@ -1873,8 +1591,6 @@ on_medias_import_tileset_activate(GtkMenuItem *menuitem, gpointer user_data)
     }
 
     gtk_widget_destroy(address_dialog);
-
-    uint32_t addr0 = addr;
 
     // Open the spritesheet file chooser
     GtkWidget *spritesheet_dialog = gtk_file_chooser_dialog_new("Import tileset",
@@ -1932,20 +1648,41 @@ on_medias_import_tileset_activate(GtkMenuItem *menuitem, gpointer user_data)
             } else if(image_width % tile_width != 0 || image_height % tile_height != 0) {
                 gtk_label_set_text(GTK_LABEL(message_label), "Wrong tile or tileset size");
             } else {
-                uint32_t y = 0;
+                // Calculate number of tiles in the tileset
+                uint32_t tiles_x = image_width / tile_width;
+                uint32_t tiles_y = image_height / tile_height;
+                uint32_t total_tiles = tiles_x * tiles_y;
 
+                // Add tileset metadata
+                applyCode.tilesetPath.push_back(filename);
+                applyCode.tilesetAddress.push_back(addr);
+                applyCode.tilesetLength.push_back(image_width * image_height);
+                applyCode.tilesetWidth.push_back(image_width);
+                applyCode.tilesetHeight.push_back(image_height);
+
+                // Store tile count for this tileset
+                applyCode.tileCount.push_back(total_tiles);
+
+                // Initialize vectors for this tileset's tiles
+                applyCode.tileAddress.push_back(std::vector<uint32_t>());
+                applyCode.tileLength.push_back(std::vector<uint32_t>());
+                applyCode.tileWidth.push_back(std::vector<uint32_t>());
+                applyCode.tileHeight.push_back(std::vector<uint32_t>());
+
+                uint32_t tileset_index = applyCode.tilesetCount;
+                applyCode.tilesetCount++;
+
+                // Extract each tile from the tileset
+                uint32_t y = 0;
                 while (y < static_cast<uint32_t>(image_height)) {
                     uint32_t x = 0;
 
                     while (x < static_cast<uint32_t>(image_width)) {
-                        // fill sprite infos
-                        applyCode.tilesetCount++;
-
-                        applyCode.tilesetPath.push_back(filename);
-                        applyCode.tilesetAddress.push_back(addr);
-                        applyCode.tilesetLength.push_back(tile_width * tile_height);
-                        applyCode.tilesetWidth.push_back(tile_width);
-                        applyCode.tilesetHeight.push_back(tile_height);
+                        // Store individual tile data
+                        applyCode.tileAddress[tileset_index].push_back(addr);
+                        applyCode.tileLength[tileset_index].push_back(tile_width * tile_height);
+                        applyCode.tileWidth[tileset_index].push_back(tile_width);
+                        applyCode.tileHeight[tileset_index].push_back(tile_height);
 
                         addr = CopyImageToRaw(pixbuf, addr + 0x2000000, x, y, tile_width, tile_height) - 0x2000000;
                         
@@ -1959,8 +1696,7 @@ on_medias_import_tileset_activate(GtkMenuItem *menuitem, gpointer user_data)
                     y += static_cast<uint32_t>(tile_height);
                 }
 
-                // new addr
-                applyCode.nextTilesetAddr = addr0 + addr;
+                gtk_label_set_text(GTK_LABEL(message_label), "Tileset imported successfully");
             }
 
             g_object_unref(pixbuf);
@@ -2011,10 +1747,13 @@ on_medias_clear_sprites_activate(GtkMenuItem *menuitem, gpointer user_data)
         applyCode.memory[i] = 0x00;
     }
 
-    applyCode.nextSpriteAddr = 0x000000;
-
-    applyCode.spriteCount = 0;
-    applyCode.spritePath.clear();
+    applyCode.spritesheetCount = 0;
+    applyCode.spritesheetPath.clear();
+    applyCode.spritesheetAddress.clear();
+    applyCode.spritesheetLength.clear();
+    applyCode.spritesheetWidth.clear();
+    applyCode.spritesheetHeight.clear();
+    applyCode.spriteCount.clear();
     applyCode.spriteAddress.clear();
     applyCode.spriteLength.clear();
     applyCode.spriteWidth.clear();
@@ -2036,8 +1775,6 @@ on_medias_clear_tilesets_activate(GtkMenuItem *menuitem, gpointer user_data)
     for(uint32_t i = 0x2000000; i <= 0x2FFFFFF; i++) {
         applyCode.memory[i] = 0x00;
     }
-
-    applyCode.nextTilesetAddr = 0x000000;
         
     applyCode.tilesetCount = 0;
     applyCode.tilesetPath.clear();
@@ -2045,6 +1782,11 @@ on_medias_clear_tilesets_activate(GtkMenuItem *menuitem, gpointer user_data)
     applyCode.tilesetLength.clear();
     applyCode.tilesetWidth.clear();
     applyCode.tilesetHeight.clear();
+    applyCode.tileCount.clear();
+    applyCode.tileAddress.clear();
+    applyCode.tileLength.clear();
+    applyCode.tileWidth.clear();
+    applyCode.tileHeight.clear();
 
     gtk_label_set_text(GTK_LABEL(message_label), "Tilesets cleared");
 }
@@ -2062,8 +1804,6 @@ on_medias_clear_sounds_activate(GtkMenuItem *menuitem, gpointer user_data)
     for(uint32_t i = 0x3000000; i <= 0x3FFFFFF; i++) {
         applyCode.memory[i] = 0x00;
     }
-
-    applyCode.nextSoundAddr = 0x000000;
             
     applyCode.soundCount = 0;
     applyCode.soundPath.clear();
@@ -2086,8 +1826,6 @@ on_medias_clear_musics_activate(GtkMenuItem *menuitem, gpointer user_data)
     for(uint32_t i = 0x4000000; i <= 0x4FFFFFF; i++) {
         applyCode.memory[i] = 0x00;
     }
-
-    applyCode.nextMusicAddr = 0x000000;
             
     applyCode.musicCount = 0;
     applyCode.musicPath.clear();
@@ -2174,7 +1912,7 @@ on_tools_level_editor_activate(GtkMenuItem *menuitem, gpointer user_data)
     GtkWidget *message_label = GTK_WIDGET(user_data);
 
     if (message_label != NULL) {
-        gtk_label_set_text(GTK_LABEL(message_label), "Level editor - Coming soon");
+        gtk_label_set_text(GTK_LABEL(message_label), "Opening Level Editor...");
     }
 
     GtkWidget *text_view = main_text_view;
@@ -2187,20 +1925,8 @@ on_tools_level_editor_activate(GtkMenuItem *menuitem, gpointer user_data)
         }
     }
 
-    GtkWidget *dialog = gtk_message_dialog_new(parent_window,
-                                               GTK_DIALOG_MODAL,
-                                               GTK_MESSAGE_INFO,
-                                               GTK_BUTTONS_OK,
-                                               "Level Editor");
-    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog),
-                                             "The Level Editor will be available soon.");
-    
-    gtk_dialog_run(GTK_DIALOG(dialog));
-    gtk_widget_destroy(dialog);
-
-    if (message_label != NULL) {
-        gtk_label_set_text(GTK_LABEL(message_label), "Ready");
-    }
+    // Call the level editor function
+    open_level_editor(parent_window, message_label);
 }
 
 void
@@ -2292,7 +2018,7 @@ on_medias_informations_activate(GtkMenuItem *menuitem, gpointer user_data)
     gtk_box_pack_start(GTK_BOX(container), title_label, FALSE, FALSE, 0);
 
     // Informations sur les sprites
-    std::string sprites_info = "Sprites: " + std::to_string(applyCode.spriteCount) + " loaded";
+    std::string sprites_info = "Sprites: " + std::to_string(applyCode.spritesheetCount) + " loaded";
     GtkWidget *sprites_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
     GtkWidget *sprites_label = gtk_label_new(sprites_info.c_str());
     GtkWidget *sprites_more_btn = gtk_button_new_with_label("More...");
@@ -2339,11 +2065,31 @@ on_medias_informations_activate(GtkMenuItem *menuitem, gpointer user_data)
     gtk_box_pack_start(GTK_BOX(container), separator, FALSE, FALSE, 5);
 
     // Informations sur les adresses mémoire
+    uint32_t nextSpriteAddr = 0;
+    for(uint32_t i = 0; i < applyCode.spritesheetCount; i++) {
+        nextSpriteAddr += applyCode.spritesheetLength[i];
+    }
+    
+    uint32_t nextTilesetAddr = 0;
+    for(uint32_t i = 0; i < applyCode.tilesetCount; i++) {
+        nextTilesetAddr += applyCode.tilesetLength[i];
+    }
+    
+    uint32_t nextSoundAddr = 0;
+    for(uint32_t i = 0; i < applyCode.soundCount; i++) {
+        nextSoundAddr += applyCode.soundLength[i];
+    }
+    
+    uint32_t nextMusicAddr = 0;
+    for(uint32_t i = 0; i < applyCode.musicCount; i++) {
+        nextMusicAddr += applyCode.musicLength[i];
+    }
+    
     std::string memory_info = "Memory addresses:\n"
-                             "Next sprite: " + Hex(applyCode.nextSpriteAddr) + "\n"
-                             "Next tileset: " + Hex(applyCode.nextTilesetAddr) + "\n"
-                             "Next sound: " + Hex(applyCode.nextSoundAddr) + "\n"
-                             "Next music: " + Hex(applyCode.nextMusicAddr);
+                             "Next sprite: " + Hex(nextSpriteAddr) + "\n"
+                             "Next tileset: " + Hex(nextTilesetAddr) + "\n"
+                             "Next sound: " + Hex(nextSoundAddr) + "\n"
+                             "Next music: " + Hex(nextMusicAddr);
     GtkWidget *memory_label = gtk_label_new(memory_info.c_str());
     gtk_label_set_justify(GTK_LABEL(memory_label), GTK_JUSTIFY_LEFT);
     gtk_box_pack_start(GTK_BOX(container), memory_label, FALSE, FALSE, 0);
@@ -2357,18 +2103,70 @@ on_medias_informations_activate(GtkMenuItem *menuitem, gpointer user_data)
 
 // Structure pour les données du callback sprite viewer (already defined in gtk.hpp)
 
-// Fonction pour mettre à jour l'image sprite
-void update_sprite_image(GtkWidget *combo, GtkWidget *image_widget) {
-    uint32_t spriteNumber = static_cast<uint32_t>(gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
+// Fonction pour mettre à jour la combobox des sprites quand la spritesheet change
+void update_sprite_combo(GtkWidget *spritesheet_combo, GtkWidget *sprite_combo) {
+    // Effacer tous les items de la combobox sprite
+    gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(sprite_combo));
     
-    if (spriteNumber >= applyCode.spriteCount) {
+    uint32_t spritesheetNumber = static_cast<uint32_t>(gtk_combo_box_get_active(GTK_COMBO_BOX(spritesheet_combo)));
+    
+    if (spritesheetNumber >= applyCode.spritesheetCount || 
+        spritesheetNumber >= applyCode.spriteCount.size()) {
+        return;
+    }
+    
+    // Ajouter les sprites de cette spritesheet
+    uint32_t sprite_count = applyCode.spriteCount[spritesheetNumber];
+    for (uint32_t i = 0; i < sprite_count; i++) {
+        std::string sprite_label = "Sprite " + std::to_string(i + 1);
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(sprite_combo), sprite_label.c_str());
+    }
+    
+    // Sélectionner le premier sprite si disponible
+    if (sprite_count > 0) {
+        gtk_combo_box_set_active(GTK_COMBO_BOX(sprite_combo), 0);
+    }
+}
+
+// Fonction pour mettre à jour l'image sprite
+void update_sprite_image(GtkWidget *spritesheet_combo, GtkWidget *sprite_combo, GtkWidget *image_widget) {
+    uint32_t spritesheetNumber = static_cast<uint32_t>(gtk_combo_box_get_active(GTK_COMBO_BOX(spritesheet_combo)));
+    int32_t spriteNumber = gtk_combo_box_get_active(GTK_COMBO_BOX(sprite_combo));
+    
+    // Vérifications de sécurité
+    if (spritesheetNumber >= applyCode.spritesheetCount || 
+        spritesheetNumber >= applyCode.spriteCount.size()) {
+        return;
+    }
+    
+    if (spriteNumber < 0 || static_cast<uint32_t>(spriteNumber) >= applyCode.spriteCount[spritesheetNumber]) {
+        return;
+    }
+    
+    if (spritesheetNumber >= applyCode.spriteAddress.size() ||
+        static_cast<uint32_t>(spriteNumber) >= applyCode.spriteAddress[spritesheetNumber].size()) {
+        return;
+    }
+    
+    if (spritesheetNumber >= applyCode.spriteWidth.size() ||
+        static_cast<uint32_t>(spriteNumber) >= applyCode.spriteWidth[spritesheetNumber].size() ||
+        spritesheetNumber >= applyCode.spriteHeight.size() ||
+        static_cast<uint32_t>(spriteNumber) >= applyCode.spriteHeight[spritesheetNumber].size()) {
+        return;
+    }
+    
+    uint32_t sprite_address = applyCode.spriteAddress[spritesheetNumber][spriteNumber];
+    uint32_t sprite_width = applyCode.spriteWidth[spritesheetNumber][spriteNumber];
+    uint32_t sprite_height = applyCode.spriteHeight[spritesheetNumber][spriteNumber];
+    
+    if (sprite_width == 0 || sprite_height == 0) {
         return;
     }
     
     // Créer le pixbuf du sprite sélectionné
-    GdkPixbuf *sprite_pixbuf = ConvertImageTo24bits(applyCode.spriteAddress[spriteNumber] + 0x1000000, 
-                                                    applyCode.spriteWidth[spriteNumber], 
-                                                    applyCode.spriteHeight[spriteNumber]);
+    GdkPixbuf *sprite_pixbuf = ConvertImageTo24bits(sprite_address + 0x1000000, 
+                                                    sprite_width, 
+                                                    sprite_height);
     
     if (sprite_pixbuf != NULL) {
         // Redimensionner l'image pour s'adapter au widget 256x256 en maintenant les proportions
@@ -2397,10 +2195,18 @@ void update_sprite_image(GtkWidget *combo, GtkWidget *image_widget) {
     }
 }
 
+// Callback pour changement de la combobox spritesheet
+void on_spritesheet_combo_changed(GtkComboBox *combo, gpointer user_data) {
+    SpriteViewerData *data = static_cast<SpriteViewerData*>(user_data);
+    update_sprite_combo(GTK_WIDGET(combo), data->sprite_combo);
+    // L'image sera mise à jour automatiquement par le callback du sprite_combo
+}
+
 // Callback pour changement combobox sprite
 void on_sprite_combo_changed(GtkComboBox *combo, gpointer user_data) {
+    (void)combo; // Not used directly
     SpriteViewerData *data = static_cast<SpriteViewerData*>(user_data);
-    update_sprite_image(GTK_WIDGET(combo), data->image_widget);
+    update_sprite_image(data->spritesheet_combo, data->sprite_combo, data->image_widget);
 }
 
 void
@@ -2414,18 +2220,40 @@ on_sprites_more_clicked(GtkButton *button, gpointer user_data)
 void
 open_sprite_viewer(GtkWindow *parent_window)
 {
-    GtkWidget *dialog = gtk_dialog_new_with_buttons("View Sprite",
+    GtkWidget *dialog = gtk_dialog_new_with_buttons("View Sprites",
                                                     parent_window,
                                                     GTK_DIALOG_MODAL,
                                                     "_Close",
                                                     GTK_RESPONSE_CLOSE,
                                                     NULL);
 
-    gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 400);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 450);
 
     GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     GtkWidget *container = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_container_set_border_width(GTK_CONTAINER(container), 20);
+
+    // Label et combobox pour sélectionner la spritesheet
+    GtkWidget *spritesheet_label = gtk_label_new("Select Spritesheet:");
+    gtk_widget_set_halign(spritesheet_label, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(container), spritesheet_label, FALSE, FALSE, 0);
+
+    GtkWidget *spritesheet_combo = gtk_combo_box_text_new();
+    for (uint32_t i = 0; i < applyCode.spritesheetCount; i++) {
+        std::string label = "Spritesheet " + std::to_string(i + 1);
+        if (i < applyCode.spritesheetPath.size() && !applyCode.spritesheetPath[i].empty()) {
+            // Extraire juste le nom du fichier
+            std::string path = applyCode.spritesheetPath[i];
+            size_t last_slash = path.find_last_of("/\\");
+            std::string filename = (last_slash != std::string::npos) ? path.substr(last_slash + 1) : path;
+            label += " (" + filename + ")";
+        }
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(spritesheet_combo), label.c_str());
+    }
+    if (applyCode.spritesheetCount > 0) {
+        gtk_combo_box_set_active(GTK_COMBO_BOX(spritesheet_combo), 0);
+    }
+    gtk_box_pack_start(GTK_BOX(container), spritesheet_combo, FALSE, FALSE, 0);
 
     // Label et combobox pour sélectionner le sprite
     GtkWidget *sprite_label = gtk_label_new("Select Sprite:");
@@ -2433,11 +2261,6 @@ open_sprite_viewer(GtkWindow *parent_window)
     gtk_box_pack_start(GTK_BOX(container), sprite_label, FALSE, FALSE, 0);
 
     GtkWidget *sprite_combo = gtk_combo_box_text_new();
-    for (uint32_t i = 1; i <= applyCode.spriteCount; i++) {
-        std::string sprite_number = std::to_string(i);
-        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(sprite_combo), sprite_number.c_str());
-    }
-    gtk_combo_box_set_active(GTK_COMBO_BOX(sprite_combo), 0); // Sélectionner le premier par défaut
     gtk_box_pack_start(GTK_BOX(container), sprite_combo, FALSE, FALSE, 0);
 
     // Zone pour afficher l'image (256x256 maximum)
@@ -2451,19 +2274,23 @@ open_sprite_viewer(GtkWindow *parent_window)
     gtk_container_add(GTK_CONTAINER(image_frame), image_scrolled);
     gtk_box_pack_start(GTK_BOX(container), image_frame, TRUE, TRUE, 0);
 
-    // Créer la structure pour le callback
+    // Créer la structure pour les callbacks
     SpriteViewerData *viewer_data = g_new(SpriteViewerData, 1);
-    viewer_data->combo = sprite_combo;
+    viewer_data->spritesheet_combo = spritesheet_combo;
+    viewer_data->sprite_combo = sprite_combo;
     viewer_data->image_widget = image_widget;
 
-    // Connecter le signal changed de la combobox
+    // Connecter les signaux changed des combobox
+    g_signal_connect(G_OBJECT(spritesheet_combo), "changed", G_CALLBACK(on_spritesheet_combo_changed), viewer_data);
     g_signal_connect(G_OBJECT(sprite_combo), "changed", G_CALLBACK(on_sprite_combo_changed), viewer_data);
     
     // Connecter la destruction du dialog pour libérer la mémoire
     g_signal_connect_swapped(G_OBJECT(dialog), "destroy", G_CALLBACK(g_free), viewer_data);
 
-    // Charger l'image initiale
-    update_sprite_image(sprite_combo, image_widget);
+    // Initialiser la liste des sprites et charger l'image initiale
+    if (applyCode.spritesheetCount > 0) {
+        update_sprite_combo(spritesheet_combo, sprite_combo);
+    }
 
     gtk_container_add(GTK_CONTAINER(content_area), container);
     gtk_widget_show_all(dialog);
@@ -2475,70 +2302,132 @@ open_sprite_viewer(GtkWindow *parent_window)
 // Tile viewer functions - similar to sprite viewer but for tilesets
 
 // Fonction pour mettre à jour l'image tile
-void update_tile_image(GtkWidget *combo, GtkWidget *image_widget) {
+// Met à jour la liste des tiles disponibles pour le tileset sélectionné
+void update_tile_combo(GtkWidget *tileset_combo, GtkWidget *tile_combo) {
+    printf("DEBUG: update_tile_combo called\n");
+    fflush(stdout);
+    
+    // Vider la combobox des tiles
+    gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(tile_combo));
+    
+    // Obtenir le tileset sélectionné
+    gint tileset_index = gtk_combo_box_get_active(GTK_COMBO_BOX(tileset_combo));
+    if (tileset_index < 0) {
+        printf("DEBUG: No tileset selected\n");
+        fflush(stdout);
+        return;
+    }
+    
+    uint32_t tilesetNumber = static_cast<uint32_t>(tileset_index);
+    
+    // Vérifications de sécurité
+    if (tilesetNumber >= applyCode.tileCount.size()) {
+        printf("DEBUG: tilesetNumber >= tileCount.size(), returning\n");
+        fflush(stdout);
+        return;
+    }
+    
+    uint32_t num_tiles = applyCode.tileCount[tilesetNumber];
+    printf("DEBUG: Tileset %d has %d tiles\n", tilesetNumber, num_tiles);
+    fflush(stdout);
+    
+    // Remplir la combobox avec les tiles
+    for (uint32_t i = 0; i < num_tiles; i++) {
+        std::string tile_text = "Tile " + std::to_string(i);
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(tile_combo), tile_text.c_str());
+    }
+    
+    // Sélectionner le premier tile par défaut
+    if (num_tiles > 0) {
+        gtk_combo_box_set_active(GTK_COMBO_BOX(tile_combo), 0);
+    }
+}
+
+void update_tile_image(GtkWidget *tileset_combo, GtkWidget *tile_combo, GtkWidget *image_widget) {
     printf("DEBUG: update_tile_image called\n");
     fflush(stdout);
     
-    uint32_t tileNumber = static_cast<uint32_t>(gtk_combo_box_get_active(GTK_COMBO_BOX(combo)));
+    gint tileset_index = gtk_combo_box_get_active(GTK_COMBO_BOX(tileset_combo));
+    gint tile_index = gtk_combo_box_get_active(GTK_COMBO_BOX(tile_combo));
     
-    printf("DEBUG: tileNumber=%d, tilesetCount=%d\n", tileNumber, applyCode.tilesetCount);
-    printf("DEBUG: tilesetAddress.size=%llu, tilesetWidth.size=%llu, tilesetHeight.size=%llu\n", 
-           (unsigned long long)applyCode.tilesetAddress.size(), (unsigned long long)applyCode.tilesetWidth.size(), (unsigned long long)applyCode.tilesetHeight.size());
+    if (tileset_index < 0 || tile_index < 0) {
+        printf("DEBUG: Invalid selection (tileset=%d, tile=%d)\n", tileset_index, tile_index);
+        fflush(stdout);
+        return;
+    }
+    
+    uint32_t tilesetNumber = static_cast<uint32_t>(tileset_index);
+    uint32_t tileNumber = static_cast<uint32_t>(tile_index);
+    
+    printf("DEBUG: tilesetNumber=%d, tileNumber=%d, tilesetCount=%d\n", 
+           tilesetNumber, tileNumber, applyCode.tilesetCount);
     fflush(stdout);
     
-    // Vérifications de sécurité
-    if (tileNumber >= applyCode.tilesetCount) {
-        printf("DEBUG: tileNumber >= tilesetCount, returning\n");
+    // Vérifications de sécurité pour le tileset
+    if (tilesetNumber >= applyCode.tilesetCount) {
+        printf("DEBUG: tilesetNumber >= tilesetCount, returning\n");
         fflush(stdout);
         return;
     }
     
-    if (tileNumber >= applyCode.tilesetAddress.size()) {
-        printf("DEBUG: tileNumber >= tilesetAddress.size, returning\n");
+    // Vérifications pour les vecteurs de tiles
+    if (tilesetNumber >= applyCode.tileCount.size()) {
+        printf("DEBUG: tilesetNumber >= tileCount.size(), returning\n");
         fflush(stdout);
         return;
     }
     
-    // Si les vecteurs de dimensions sont vides, les initialiser avec des valeurs par défaut
-    if (applyCode.tilesetWidth.size() == 0 || applyCode.tilesetHeight.size() == 0) {
-        printf("DEBUG: Initializing tileset dimensions with defaults (16x16)\n");
-        applyCode.tilesetWidth.clear();
-        applyCode.tilesetHeight.clear();
-        for (uint32_t i = 0; i < applyCode.tilesetCount; i++) {
-            applyCode.tilesetWidth.push_back(16);   // 16x16 par défaut (comme dans l'importation)
-            applyCode.tilesetHeight.push_back(16);
-        }
-        fflush(stdout);
-    }
-    
-    if (tileNumber >= applyCode.tilesetWidth.size() || 
-        tileNumber >= applyCode.tilesetHeight.size()) {
-        printf("DEBUG: tileNumber >= dimension vector size, returning\n");
+    if (tileNumber >= applyCode.tileCount[tilesetNumber]) {
+        printf("DEBUG: tileNumber >= tileCount[tilesetNumber], returning\n");
         fflush(stdout);
         return;
     }
+    
+    // Vérifications pour les vecteurs imbriqués
+    if (tilesetNumber >= applyCode.tileAddress.size() ||
+        tilesetNumber >= applyCode.tileWidth.size() ||
+        tilesetNumber >= applyCode.tileHeight.size()) {
+        printf("DEBUG: tilesetNumber >= tile vector size, returning\n");
+        fflush(stdout);
+        return;
+    }
+    
+    if (tileNumber >= applyCode.tileAddress[tilesetNumber].size() ||
+        tileNumber >= applyCode.tileWidth[tilesetNumber].size() ||
+        tileNumber >= applyCode.tileHeight[tilesetNumber].size()) {
+        printf("DEBUG: tileNumber >= tile dimension vector size, returning\n");
+        fflush(stdout);
+        return;
+    }
+    
+    uint32_t tile_width = applyCode.tileWidth[tilesetNumber][tileNumber];
+    uint32_t tile_height = applyCode.tileHeight[tilesetNumber][tileNumber];
     
     // Vérifier que les dimensions sont valides
-    if (applyCode.tilesetWidth[tileNumber] == 0 || applyCode.tilesetHeight[tileNumber] == 0) {
-        printf("DEBUG: dimensions are 0 (width=%d, height=%d), returning\n", 
-               applyCode.tilesetWidth[tileNumber], applyCode.tilesetHeight[tileNumber]);
+    if (tile_width == 0 || tile_height == 0) {
+        printf("DEBUG: tile dimensions are 0 (width=%d, height=%d), returning\n", 
+               tile_width, tile_height);
         fflush(stdout);
         return;
     }
     
-    // Debug : afficher les informations du tileset
-    printf("DEBUG Tile %d: addr=0x%X, width=%d, height=%d\n", 
-           tileNumber, 
-           applyCode.tilesetAddress[tileNumber], 
-           applyCode.tilesetWidth[tileNumber], 
-           applyCode.tilesetHeight[tileNumber]);
+    uint32_t tile_address = applyCode.tileAddress[tilesetNumber][tileNumber];
     
-    // Créer le pixbuf du tileset sélectionné
-    GdkPixbuf *tile_pixbuf = ConvertImageTo24bits(applyCode.tilesetAddress[tileNumber] + 0x2000000, 
-                                                   applyCode.tilesetWidth[tileNumber], 
-                                                   applyCode.tilesetHeight[tileNumber]);
+    // Debug : afficher les informations du tile
+    printf("DEBUG Tile [%d][%d]: addr=0x%X, width=%d, height=%d\n", 
+           tilesetNumber, tileNumber,
+           tile_address, 
+           tile_width, 
+           tile_height);
+    fflush(stdout);
+    
+    // Créer le pixbuf du tile sélectionné
+    GdkPixbuf *tile_pixbuf = ConvertImageTo24bits(tile_address + 0x2000000, 
+                                                   tile_width, 
+                                                   tile_height);
     
     printf("DEBUG: tile_pixbuf = %p\n", tile_pixbuf);
+    fflush(stdout);
     
     if (tile_pixbuf != NULL) {
         // Redimensionner l'image pour s'adapter au widget 256x256 en maintenant les proportions
@@ -2567,10 +2456,17 @@ void update_tile_image(GtkWidget *combo, GtkWidget *image_widget) {
     }
 }
 
+// Callback pour changement combobox tileset
+void on_tileset_combo_changed(GtkComboBox *combo, gpointer user_data) {
+    TileViewerData *data = static_cast<TileViewerData*>(user_data);
+    update_tile_combo(data->tileset_combo, data->tile_combo);
+    update_tile_image(data->tileset_combo, data->tile_combo, data->image_widget);
+}
+
 // Callback pour changement combobox tile
 void on_tile_combo_changed(GtkComboBox *combo, gpointer user_data) {
     TileViewerData *data = static_cast<TileViewerData*>(user_data);
-    update_tile_image(GTK_WIDGET(combo), data->image_widget);
+    update_tile_image(data->tileset_combo, data->tile_combo, data->image_widget);
 }
 
 void
@@ -2597,34 +2493,47 @@ open_tile_viewer(GtkWindow *parent_window)
         return;
     }
     
-    GtkWidget *dialog = gtk_dialog_new_with_buttons("View Tileset",
+    GtkWidget *dialog = gtk_dialog_new_with_buttons("View Tiles",
                                                     parent_window,
                                                     GTK_DIALOG_MODAL,
                                                     "_Close",
                                                     GTK_RESPONSE_CLOSE,
                                                     NULL);
 
-    gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 400);
+    gtk_window_set_default_size(GTK_WINDOW(dialog), 300, 450);
 
     GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     GtkWidget *container = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_container_set_border_width(GTK_CONTAINER(container), 20);
 
     // Label et combobox pour sélectionner le tileset
-    GtkWidget *tile_label = gtk_label_new("Select Tileset:");
+    GtkWidget *tileset_label = gtk_label_new("Select Tileset:");
+    gtk_widget_set_halign(tileset_label, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(container), tileset_label, FALSE, FALSE, 0);
+
+    GtkWidget *tileset_combo = gtk_combo_box_text_new();
+    for (uint32_t i = 0; i < applyCode.tilesetCount; i++) {
+        // Afficher le numéro et le nom du fichier
+        std::string display_text = std::to_string(i) + " - ";
+        if (i < applyCode.tilesetPath.size()) {
+            std::filesystem::path p(applyCode.tilesetPath[i]);
+            display_text += p.filename().string();
+        }
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(tileset_combo), display_text.c_str());
+    }
+    gtk_combo_box_set_active(GTK_COMBO_BOX(tileset_combo), 0);
+    gtk_box_pack_start(GTK_BOX(container), tileset_combo, FALSE, FALSE, 0);
+
+    // Label et combobox pour sélectionner le tile
+    GtkWidget *tile_label = gtk_label_new("Select Tile:");
     gtk_widget_set_halign(tile_label, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(container), tile_label, FALSE, FALSE, 0);
 
     GtkWidget *tile_combo = gtk_combo_box_text_new();
-    for (uint32_t i = 0; i <  applyCode.tilesetCount; i++) {
-        std::string tile_number = std::to_string(i);
-        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(tile_combo), tile_number.c_str());
-    }
-    gtk_combo_box_set_active(GTK_COMBO_BOX(tile_combo), 0); // Sélectionner le premier par défaut
     gtk_box_pack_start(GTK_BOX(container), tile_combo, FALSE, FALSE, 0);
 
     // Zone pour afficher l'image (256x256 maximum)
-    GtkWidget *image_frame = gtk_frame_new("Tileset Image");
+    GtkWidget *image_frame = gtk_frame_new("Tile Image");
     GtkWidget *image_scrolled = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(image_scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_widget_set_size_request(image_scrolled, 256, 256);
@@ -2634,19 +2543,22 @@ open_tile_viewer(GtkWindow *parent_window)
     gtk_container_add(GTK_CONTAINER(image_frame), image_scrolled);
     gtk_box_pack_start(GTK_BOX(container), image_frame, TRUE, TRUE, 0);
 
-    // Créer la structure pour le callback
+    // Créer la structure pour les callbacks
     TileViewerData *viewer_data = g_new(TileViewerData, 1);
-    viewer_data->combo = tile_combo;
+    viewer_data->tileset_combo = tileset_combo;
+    viewer_data->tile_combo = tile_combo;
     viewer_data->image_widget = image_widget;
 
-    // Connecter le signal changed de la combobox
+    // Connecter les signaux changed des combobox
+    g_signal_connect(G_OBJECT(tileset_combo), "changed", G_CALLBACK(on_tileset_combo_changed), viewer_data);
     g_signal_connect(G_OBJECT(tile_combo), "changed", G_CALLBACK(on_tile_combo_changed), viewer_data);
     
     // Connecter la destruction du dialog pour libérer la mémoire
     g_signal_connect_swapped(G_OBJECT(dialog), "destroy", G_CALLBACK(g_free), viewer_data);
 
-    // Charger l'image initiale
-    update_tile_image(tile_combo, image_widget);
+    // Initialiser la liste des tiles et charger l'image initiale
+    update_tile_combo(tileset_combo, tile_combo);
+    update_tile_image(tileset_combo, tile_combo, image_widget);
 
     gtk_container_add(GTK_CONTAINER(content_area), container);
     gtk_widget_show_all(dialog);

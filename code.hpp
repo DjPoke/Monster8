@@ -19,29 +19,38 @@ public:
     uint8_t memory[0x5000000];
     std::string label[0x1000000][2];
 
-    uint32_t spriteCount;
+    uint32_t spritesheetCount;
+    std::vector<std::string> spritesheetPath;
+    std::vector<uint32_t> spritesheetAddress;
+    std::vector<uint32_t> spritesheetLength;
+    std::vector<uint32_t> spritesheetWidth;
+    std::vector<uint32_t> spritesheetHeight;
+
+    std::vector<uint32_t> spriteCount;
+    std::vector<std::vector<uint32_t>> spriteAddress;
+    std::vector<std::vector<uint32_t>> spriteLength;
+    std::vector<std::vector<uint32_t>> spriteWidth;
+    std::vector<std::vector<uint32_t>> spriteHeight;
+
     uint32_t tilesetCount;
-    uint32_t soundCount;
-    uint32_t musicCount;
-
-    uint32_t nextSpriteAddr;
-    uint32_t nextTilesetAddr;
-    uint32_t nextSoundAddr;
-    uint32_t nextMusicAddr;
-
-    std::vector<std::string> spritePath;
-    std::vector<uint32_t> spriteAddress;
-    std::vector<uint32_t> spriteLength;
-    std::vector<uint32_t> spriteWidth;
-    std::vector<uint32_t> spriteHeight;
     std::vector<std::string> tilesetPath;
     std::vector<uint32_t> tilesetAddress;
     std::vector<uint32_t> tilesetLength;
     std::vector<uint32_t> tilesetWidth;
     std::vector<uint32_t> tilesetHeight;
+
+    std::vector<uint32_t> tileCount;
+    std::vector<std::vector<uint32_t>> tileAddress;
+    std::vector<std::vector<uint32_t>> tileLength;
+    std::vector<std::vector<uint32_t>> tileWidth;
+    std::vector<std::vector<uint32_t>> tileHeight;
+
+    uint32_t soundCount;
     std::vector<std::string> soundPath;
     std::vector<uint32_t> soundAddress;
     std::vector<uint32_t> soundLength;
+
+    uint32_t musicCount;
     std::vector<std::string> musicPath;
     std::vector<uint32_t> musicAddress;
     std::vector<uint32_t> musicLength;
