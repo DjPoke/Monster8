@@ -198,16 +198,18 @@ private:
 
     void initialize(); // Reset emulator state
     uint8_t getOpcode();
-    void DrawSprite(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t addr);
-    void DrawBlock(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t addr);
+    void DrawSprite(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr);
+    void DrawBlock(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr);
     void GrabBlock(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t addr);
+    void DrawTile(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr);
+    void DrawMap(uint32_t map_address, uint8_t map_width, uint8_t map_height, uint32_t tileset_address,uint8_t tile_width, uint8_t tile_height, int32_t x, int32_t y, uint8_t width, uint8_t height);
     uint8_t GetPixel(uint8_t x, uint8_t y);
     uint8_t getJoystickState();
     void PlaySound(uint32_t addr, uint32_t length);
     void PlayMusic(uint32_t addr, uint32_t length);
     void StopMusic();
     uint8_t PrintChar(char c);
-    void SetPixel(uint32_t x, uint32_t y, uint8_t c);
+    void SetPixel(int32_t x, int32_t y, uint8_t c);
     uint8_t GetPixel(uint32_t x, uint32_t y);
     void ScrollScreen(uint8_t scrollX, uint8_t scrollY);
     uint8_t GetFlagsValue(uint32_t v1, uint32_t v2, string v3);

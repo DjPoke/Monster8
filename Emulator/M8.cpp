@@ -1310,31 +1310,31 @@ void Monster8::emulateCycle() {
                         break;
                     case 0x01: // Draw Sprite (5 opcodes)
                         {
-                            uint32_t x = A[0];
-                            uint32_t y = (uint32_t)D[0];
-                            uint8_t width = D[1];
-                            uint8_t height = D[2];
-                            uint32_t spriteAddress = A[1];
+                            int32_t x = A[0];
+                            int32_t y = A[1];
+                            uint8_t width = D[0];
+                            uint8_t height = D[1];
+                            uint32_t spriteAddress = A[2];
                             DrawSprite(x, y, width, height, spriteAddress);
                         }
                         break;
                     case 0x02: // Draw Block from Screen to Memory (5 opcodes)
                         {
-                            uint32_t x = A[0];
-                            uint32_t y = (uint32_t)D[0];
-                            uint8_t width = D[1];
-                            uint8_t height = D[2];
-                            uint32_t spriteAddress = A[1];
+                            int32_t x = A[0];
+                            int32_t y = A[1];
+                            uint8_t width = D[0];
+                            uint8_t height = D[1];
+                            uint32_t spriteAddress = A[2];
                             DrawBlock(x, y, width, height, spriteAddress);
                         }
                         break;
                     case 0x03: // Grab Block from Memory to Screen (5 opcodes)
                         {
-                            uint32_t x = A[0];
-                            uint32_t y = (uint32_t)D[0];
-                            uint8_t width = D[1];
-                            uint8_t height = D[2];
-                            uint32_t spriteAddress = A[1];
+                            int32_t x = A[0];
+                            int32_t y = A[1];
+                            uint8_t width = D[0];
+                            uint8_t height = D[1];
+                            uint32_t spriteAddress = A[2];
                             GrabBlock(x, y, width, height, spriteAddress);
                         }
                         break;
@@ -1370,11 +1370,11 @@ void Monster8::emulateCycle() {
                     case 0x0A: // Set Border Color (2 opcode)
                         border = getOpcode();
                         break;
-                    case 0x0B: // Set a pixel with Color D1 at A0, D0 (1 opcode)
-                        SetPixel(A[0], (uint32_t)D[0], D[1]);
+                    case 0x0B: // Set a pixel with Color D0 at A0, A1 (1 opcode)
+                        SetPixel(A[0], A[1], D[0]);
                         break;
-                    case 0x0C: // Get pixel color at A0, D0 in D1 (1 opcode)
-                        D[1] = GetPixel(A[0], (uint32_t)D[0]);
+                    case 0x0C: // Get pixel color at A0, A1 in D0 (1 opcode)
+                        D[1] = GetPixel(A[0], A[1]);
                         break;
                     case 0x0D: // Scroll Screen (3 opcode)
                         {
@@ -1418,6 +1418,19 @@ void Monster8::emulateCycle() {
                     case 0x11: // Stop Music playback (1 opcode)
                         StopMusic();
                         break;
+                    case 0x12: // Draw Map (1 opcode)
+                        uint32_t map_address = A[0];
+                        uint8_t map_width = D[0];
+                        uint8_t map_height = D[1];
+                        uint32_t tileset_address = A[1];
+                        uint8_t tile_width = D[2];
+                        uint8_t tile_height = D[3];
+                        int32_t x = A[2];
+                        int32_t y = A[3];
+                        uint8_t width = D[4];
+                        uint8_t height = D[5];
+                        DrawMap(map_address, map_width, map_height, tileset_address, tile_width, tile_height, x, y, width, height);
+                        break;
                 }
             }
             break;
@@ -1426,9 +1439,9 @@ void Monster8::emulateCycle() {
     }
 }
 
-void Monster8::DrawSprite(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t addr) {
-    for(uint32_t yscreen = 0; yscreen < h; ++yscreen) {
-        for(uint32_t xscreen = 0; xscreen < w; ++xscreen) {
+void Monster8::DrawSprite(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr) {
+    for(int32_t yscreen = 0; yscreen < h; ++yscreen) {
+        for(int32_t xscreen = 0; xscreen < w; ++xscreen) {
             if(sprites[addr] > 0) {
                 SetPixel(x + xscreen,y + yscreen, sprites[addr]);
             }
@@ -1438,9 +1451,9 @@ void Monster8::DrawSprite(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t
     }
 }
 
-void Monster8::DrawBlock(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t addr) {
-    for(uint32_t yscreen = 0; yscreen < h; ++yscreen) {
-        for(uint32_t xscreen = 0; xscreen < w; ++xscreen) {
+void Monster8::DrawBlock(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr) {
+    for(int32_t yscreen = 0; yscreen < h; ++yscreen) {
+        for(int32_t xscreen = 0; xscreen < w; ++xscreen) {
             SetPixel(x + xscreen,y + yscreen, memory[addr]);
 
             addr++;
@@ -1452,6 +1465,16 @@ void Monster8::GrabBlock(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t 
     for(uint32_t yscreen = 0; yscreen < h; ++yscreen) {
         for(uint32_t xscreen = 0; xscreen < w; ++xscreen) {
             memory[addr] = GetPixel(x + xscreen,y + yscreen);
+
+            addr++;
+        }
+    }
+}
+
+void Monster8::DrawTile(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr) {
+    for(uint32_t yscreen = 0; yscreen < h; ++yscreen) {
+        for(uint32_t xscreen = 0; xscreen < w; ++xscreen) {
+            SetPixel(x + xscreen,y + yscreen, tilesets[addr]);
 
             addr++;
         }
@@ -1574,7 +1597,7 @@ uint8_t Monster8::PrintChar(char c) {
             if (x0 + col >= 320) break;
             // bit 0 = colonne 0 (LSB à gauche)
             if (pattern & (1u << col)) {
-                SetPixel(static_cast<uint32_t>(x0 + col), static_cast<uint32_t>(y0 + row), pen);
+                SetPixel(static_cast<int32_t>(x0 + col), static_cast<int32_t>(y0 + row), pen);
             }
         }
     }
@@ -1606,9 +1629,9 @@ uint8_t Monster8::PrintString(uint32_t addr) {
     return 0x00;
 }
 
-void Monster8::SetPixel(uint32_t x, uint32_t y, uint8_t c) {
+void Monster8::SetPixel(int32_t x, int32_t y, uint8_t c) {
     // Ecrit un pixel (1 octet couleur) dans le buffer 320x200 et déclenche le redraw
-    if (x < 320 && y < 200) {
+    if (x < 320 && y < 200 && x >= 0 && y >= 0) {
         screen[(y * 320) + x] = c;
     }
 }
@@ -1652,6 +1675,27 @@ void Monster8::ScrollScreen(uint8_t scrollX, uint8_t scrollY) {
             }
         }
     }
+}
+
+void Monster8::DrawMap(uint32_t map_address, uint8_t map_width, uint8_t map_height, uint32_t tileset_address,uint8_t tile_width, uint8_t tile_height, int32_t x, int32_t y, uint8_t width, uint8_t height) {
+    if(map_width == 0 || map_height == 0) return;
+    if(width == 0 || height == 0) return;
+    if(width > map_width || height > map_height) return;
+
+    int32_t x1 = x;
+    int32_t y1 = y;
+    int32_t x2 = x1 + width - 1;
+    int32_t y2 = y1 + height - 1;
+
+    for(int32_t y3 = y1; y3 <= y2; y3++) {
+        for(int32_t x3 = x1; x3 <= x2; x3++) {
+            uint8_t tile_index = memory[map_address + (y3 * map_width) + x3];
+            uint32_t tile_address = tileset_address + (tile_index * tile_width * tile_height);
+
+            DrawTile(x3 * tile_width, y3 * tile_height, tile_width, tile_height, tile_address);
+        }
+    }
+
 }
 
 void Monster8::Flip() {

@@ -988,7 +988,7 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
         if(CountString(dat, ",") != 3) {
             return "Bad parameters at line " + std::to_string(l);
         } else {
-            if(dat == "A0,D0,D1") {
+            if(dat == "A0,A1,D0") {
                 ToMemory(PC, 0xFF);
                 ToMemory(PC, 0x0B);
             }
@@ -997,11 +997,9 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
         if(CountString(dat, ",") != 2) {
             return "Bad parameters at line " + std::to_string(l);
         } else {
-            if(dat == "A0,D0") {
+            if(dat == "A0,A1") {
                 ToMemory(PC, 0xFF);
                 ToMemory(PC, 0x0C);
-                ToMemory(PC, Val(StringField(dat, 1, ",")) & 0xFF);
-                ToMemory(PC, Val(StringField(dat, 2, ",")) & 0xFF);
             }
         }
     } else if(cmd == "SCROLL") {
@@ -1052,6 +1050,13 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
         } else {
             ToMemory(PC, 0xFF);
             ToMemory(PC, 0x11);
+        }
+    } else if(cmd == "MAP") {
+        if(CheckGarbages(dat)) {
+            return "Garbages found at line " + std::to_string(l);
+        } else {
+            ToMemory(PC, 0xFF);
+            ToMemory(PC, 0x12);
         }
     } else if(cmd == "DB") {
         if(dat == "") {

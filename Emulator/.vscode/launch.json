@@ -13,7 +13,7 @@
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "C:/msys64/mingw64/bin/gdb.exe",
-            "preLaunchTask": "CMake: Build (Debug)",
+            "preLaunchTask": "Build (Debug)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -34,7 +34,7 @@
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "C:/msys64/mingw64/bin/gdb.exe",
-            "preLaunchTask": "CMake: Build (Release)",
+            "preLaunchTask": "Build (Release)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -55,7 +55,7 @@
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "preLaunchTask": "CMake: Build (Debug)",
+            "preLaunchTask": "Build (Debug)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -76,7 +76,7 @@
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
-            "preLaunchTask": "CMake: Build (Release)",
+            "preLaunchTask": "Build (Release)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

@@ -314,8 +314,21 @@ cls
 
 ld a0,144
 call SetPX
-ld d0,164
+ld a1,164
 call SetPY
+
+; draw a part of the map
+ld a0,map1 ; map address in memory
+ld d0,map1_width ; full map size
+ld d1,map1_height
+ld a1,0x000000 ; tileset in tilesets memory
+ld d2,16 ; tile size
+ld d3,16
+ld a2,0 ; coordinates to draw
+ld a3,0
+ld d4,20 ; width & height to draw
+ld d5,13
+map
 
 call StorePlayerBG
 call DrawPlayer
@@ -340,12 +353,22 @@ pop a0
 ret
 
 ; ============
-; get py in d0
+; get py in a1
 ; ============
 GrabPY:
 push a0
 ld a0,py
 ld d0,[a0]
+push a0
+pop a1
+inc a1
+ld d1,[a1]
+push a1
+pop a2
+inc a2
+ld d2,[a2]
+push d0,d1,d2
+pop a1
 pop a0
 ret
 
@@ -368,11 +391,23 @@ ld [a2],d2
 ret
 
 ; ============
-; set py in d0
+; set py in a1
 ; ============
 SetPY:
+push a0
+push a1
+pop d0,d1,d2
 ld a0,py
 ld [a0],d0
+push a0
+pop a1
+inc a1
+ld [a1],d1
+push a1
+pop a2
+inc a2
+ld [a2],d2
+pop a0
 ret
 
 ; ===============
@@ -438,10 +473,10 @@ ret
 StorePlayerBG:
 call GrabPX
 call GrabPY
+ld d0,32
 ld d1,32
-ld d2,32
-ld a1,pbg
-grab ; grab background at a0,d0, d1,d2, a1
+ld a2,pbg
+grab ; grab background at a0,a1, d0,d1, a2
 ret
 
 ; ===========
@@ -459,10 +494,10 @@ mult a0,a1
 push a0
 call GrabPX
 call GrabPY
+ld d0,32
 ld d1,32
-ld d2,32
-pop a1
-sprite ; draw sprite at a0,d0, d1,d2, a1
+pop a2
+sprite ; draw sprite at a0,a1, d0,d1, a2
 ret
 
 ; ===========================
@@ -471,10 +506,10 @@ ret
 RestorePlayerBG:
 call GrabPX
 call GrabPY
+ld d0,32
 ld d1,32
-ld d2,32
-ld a1,pbg
-block ; draw background block at a0,d0, d1,d2, a1
+ld a2,pbg
+block ; draw background block at a0,a1, d0,d1, a2
 ret
 
 ; ==============
@@ -511,13 +546,8 @@ jp sd_loop
 ; ====
 ; data
 ; ====
-; 24 bits px
 px: db 0, 0, 0
-
-; 8 bits py
-py: db 0
-
-
+py: db 0, 0, 0
 
 ; frame animation for the player
 pframe: db 0
