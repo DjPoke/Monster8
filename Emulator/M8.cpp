@@ -33,6 +33,19 @@ void Monster8::initialize() {
     cursorX = 1;
     cursorY = 1;
 
+    m_map_address = 0;
+    m_map_width = 0;
+    m_map_height = 0;
+
+    m_tileset_address = 0;
+    m_tile_width = 0;
+    m_tile_height = 0;
+
+    m_window_x = 0;
+    m_window_y = 0;
+    m_window_width = 0;
+    m_window_height = 0;
+
     border = 107; // bordure violette
     paper = 107;   // fond violet
     pen = 0;       // texte noir
@@ -1418,18 +1431,28 @@ void Monster8::emulateCycle() {
                     case 0x11: // Stop Music playback (1 opcode)
                         StopMusic();
                         break;
-                    case 0x12: // Draw Map (1 opcode)
-                        uint32_t map_address = A[0];
-                        uint8_t map_width = D[0];
-                        uint8_t map_height = D[1];
-                        uint32_t tileset_address = A[1];
-                        uint8_t tile_width = D[2];
-                        uint8_t tile_height = D[3];
-                        int32_t x = A[2];
-                        int32_t y = A[3];
-                        uint8_t width = D[4];
-                        uint8_t height = D[5];
-                        DrawMap(map_address, map_width, map_height, tileset_address, tile_width, tile_height, x, y, width, height);
+                    case 0x12: // Set map (1 opcode)
+                        {
+                            SetMap(A[0], D[0], D[1]);
+                        }
+                        break;
+                    case 0x13: // Set map's tileset (1 opcode)
+                        {
+                            SetTileset(A[0], D[0], D[1]);
+                        }
+                        break;
+                    case 0x14: // Set map's window (1 opcode)
+                        {
+                            SetWindow(D[0], D[1], D[2], D[3]);
+                        }
+                        break;
+                    case 0x15: // Draw map (1 opcode)
+                        {
+                            int32_t x = A[0];
+                            int32_t y = A[1];
+
+                            DrawWindow(x, y);
+                        }
                         break;
                 }
             }
@@ -1677,25 +1700,47 @@ void Monster8::ScrollScreen(uint8_t scrollX, uint8_t scrollY) {
     }
 }
 
-void Monster8::DrawMap(uint32_t map_address, uint8_t map_width, uint8_t map_height, uint32_t tileset_address,uint8_t tile_width, uint8_t tile_height, int32_t x, int32_t y, uint8_t width, uint8_t height) {
-    if(map_width == 0 || map_height == 0) return;
-    if(width == 0 || height == 0) return;
-    if(width > map_width || height > map_height) return;
+void Monster8::SetMap(uint32_t map_address, uint8_t map_width, uint8_t map_height) {
+    m_map_address = map_address;
+    m_map_width = map_width;
+    m_map_height = map_height;
+}
 
-    int32_t x1 = x;
-    int32_t y1 = y;
-    int32_t x2 = x1 + width - 1;
-    int32_t y2 = y1 + height - 1;
+void Monster8::SetTileset(uint32_t tileset_address, uint8_t tile_width, uint8_t tile_height) {
+    m_tileset_address = tileset_address;
+    m_tile_width = tile_width;
+    m_tile_height = tile_height;
+}
+
+void Monster8::SetWindow(uint8_t window_x, uint8_t window_y, uint8_t window_width, uint8_t window_height) {
+    m_window_x = window_x;
+    m_window_y = window_y;
+    m_window_width = window_width;
+    m_window_height = window_height;
+}
+
+void Monster8::DrawWindow(int32_t x, int32_t y) {
+    if(m_map_width == 0 || m_map_height == 0) return;
+    if(m_window_width == 0 || m_window_height == 0) return;
+    if(m_window_width > m_map_width || m_window_height > m_map_height) return;
+    if((m_window_x + m_window_width - 1) > m_map_width || (m_window_y + m_window_height - 1) > m_map_height) return;
+
+    int32_t x1 = m_window_x;
+    int32_t y1 = m_window_y;
+    int32_t x2 = x1 + m_window_width - 1;
+    int32_t y2 = y1 + m_window_height - 1;
 
     for(int32_t y3 = y1; y3 <= y2; y3++) {
         for(int32_t x3 = x1; x3 <= x2; x3++) {
-            uint8_t tile_index = memory[map_address + (y3 * map_width) + x3];
-            uint32_t tile_address = tileset_address + (tile_index * tile_width * tile_height);
+            uint8_t tile_index = memory[m_map_address + (y3 * m_map_width) + x3];
+            uint32_t tile_address = m_tileset_address + (tile_index * m_tile_width * m_tile_height);
 
-            DrawTile(x3 * tile_width, y3 * tile_height, tile_width, tile_height, tile_address);
+            int32_t xt = x + (int32_t)(x3 * m_tile_width);
+            int32_t yt = y + (int32_t)(y3 * m_tile_height);
+
+            DrawTile(xt, yt, m_tile_width, m_tile_height, tile_address);
         }
     }
-
 }
 
 void Monster8::Flip() {
@@ -1875,4 +1920,32 @@ uint8_t Monster8::GetFlagsValue(uint32_t v1, uint32_t v2, string v3) {
     }
 
     return D[7];
+}
+
+// convert 24 bits signed integer to 32 bits signed integer
+int32_t Monster8::int24toint32(int32_t int24) {
+    int32_t int32;
+
+    int24 = int24 % 0x1000000;
+
+    if ((int24 & 0x800000) != 0) {
+        int32 = int24 | 0xff000000;
+    } else {
+        int32 = int24;
+    }
+
+    return int32;
+}
+
+// convert 32 bits signed integer to 24 bits signed integer
+int32_t Monster8::int32toint24(int32_t int32) {
+    int32_t int24;
+
+    if ((int32 & 0x80000000) != 0) {
+        int24 = (int32 & 0xffffff) | 0x800000;
+    } else {
+        int24 = int32 % 0x1000000;
+    }
+
+    return int24;
 }

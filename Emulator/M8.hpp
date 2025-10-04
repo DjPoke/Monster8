@@ -64,6 +64,19 @@ private:
     uint8_t cursorX;
     uint8_t cursorY;
 
+    uint32_t m_map_address;
+    uint8_t m_map_width;
+    uint8_t m_map_height;
+
+    uint32_t m_tileset_address;
+    uint8_t m_tile_width;
+    uint8_t m_tile_height;
+    
+    uint8_t m_window_x;
+    uint8_t m_window_y;
+    uint8_t m_window_width;
+    uint8_t m_window_height;
+
     // 8x8 VGA font, ASCII 0x00-0x7F (public domain)
     const uint8_t fontset[128][8] = {
         { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, // U+0000 (nul)
@@ -202,7 +215,10 @@ private:
     void DrawBlock(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr);
     void GrabBlock(uint32_t x, uint32_t y, uint8_t w, uint8_t h, uint32_t addr);
     void DrawTile(int32_t x, int32_t y, uint8_t w, uint8_t h, uint32_t addr);
-    void DrawMap(uint32_t map_address, uint8_t map_width, uint8_t map_height, uint32_t tileset_address,uint8_t tile_width, uint8_t tile_height, int32_t x, int32_t y, uint8_t width, uint8_t height);
+    void SetMap(uint32_t map_address, uint8_t map_width, uint8_t map_height);
+    void SetTileset(uint32_t tileset_address, uint8_t tile_width, uint8_t tile_height);
+    void SetWindow(uint8_t window_x, uint8_t window_y, uint8_t window_width, uint8_t window_height);
+    void DrawWindow(int32_t x, int32_t y);
     uint8_t GetPixel(uint8_t x, uint8_t y);
     uint8_t getJoystickState();
     void PlaySound(uint32_t addr, uint32_t length);
@@ -213,5 +229,6 @@ private:
     uint8_t GetPixel(uint32_t x, uint32_t y);
     void ScrollScreen(uint8_t scrollX, uint8_t scrollY);
     uint8_t GetFlagsValue(uint32_t v1, uint32_t v2, string v3);
-
+    int32_t int24toint32(int32_t int24);
+    int32_t int32toint24(int32_t int32);
 };

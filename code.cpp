@@ -1051,12 +1051,33 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
             ToMemory(PC, 0xFF);
             ToMemory(PC, 0x11);
         }
-    } else if(cmd == "MAP") {
+    } else if(cmd == "SETMAP") {
         if(CheckGarbages(dat)) {
             return "Garbages found at line " + std::to_string(l);
         } else {
             ToMemory(PC, 0xFF);
             ToMemory(PC, 0x12);
+        }
+    } else if(cmd == "SETTILESET") {
+        if(CheckGarbages(dat)) {
+            return "Garbages found at line " + std::to_string(l);
+        } else {
+            ToMemory(PC, 0xFF);
+            ToMemory(PC, 0x13);
+        }
+    } else if(cmd == "SETWINDOW") {
+        if(CheckGarbages(dat)) {
+            return "Garbages found at line " + std::to_string(l);
+        } else {
+            ToMemory(PC, 0xFF);
+            ToMemory(PC, 0x14);
+        }
+    } else if(cmd == "DRAWMAP") {
+        if(CheckGarbages(dat)) {
+            return "Garbages found at line " + std::to_string(l);
+        } else {
+            ToMemory(PC, 0xFF);
+            ToMemory(PC, 0x15);
         }
     } else if(cmd == "DB") {
         if(dat == "") {

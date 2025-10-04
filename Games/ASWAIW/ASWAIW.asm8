@@ -317,18 +317,29 @@ call SetPX
 ld a1,164
 call SetPY
 
-; draw a part of the map
+; set current map
 ld a0,map1 ; map address in memory
 ld d0,map1_width ; full map size
 ld d1,map1_height
-ld a1,0x000000 ; tileset in tilesets memory
-ld d2,16 ; tile size
-ld d3,16
-ld a2,0 ; coordinates to draw
-ld a3,0
-ld d4,20 ; width & height to draw
-ld d5,13
-map
+setmap
+
+; set current tileset
+ld a0,0x000000 ; tileset in tilesets memory
+ld d0,16 ; tile size
+ld d1,16
+settileset
+
+; set current window for the map
+ld d0,0 ; coordinates to draw
+ld d1,0
+ld d2,20 ; width & height to draw
+ld d3,13
+setwindow
+
+; draw the map's window at coordinates
+ld a0,0
+ld a1,0
+drawmap
 
 call StorePlayerBG
 call DrawPlayer
