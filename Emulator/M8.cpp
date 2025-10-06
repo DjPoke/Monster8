@@ -1725,18 +1725,18 @@ void Monster8::DrawWindow(int32_t x, int32_t y) {
     if(m_window_width > m_map_width || m_window_height > m_map_height) return;
     if((m_window_x + m_window_width - 1) > m_map_width || (m_window_y + m_window_height - 1) > m_map_height) return;
 
-    int32_t x1 = m_window_x;
-    int32_t y1 = m_window_y;
-    int32_t x2 = x1 + m_window_width - 1;
-    int32_t y2 = y1 + m_window_height - 1;
+    uint32_t x1 = m_window_x;
+    uint32_t y1 = m_window_y;
+    uint32_t x2 = x1 + m_window_width - 1;
+    uint32_t y2 = y1 + m_window_height - 1;
 
-    for(int32_t y3 = y1; y3 <= y2; y3++) {
-        for(int32_t x3 = x1; x3 <= x2; x3++) {
-            uint8_t tile_index = memory[m_map_address + (y3 * m_map_width) + x3];
+    for(uint32_t y3 = y1; y3 <= y2; y3++) {
+        for(uint32_t x3 = x1; x3 <= x2; x3++) {
+            uint8_t tile_index = memory[m_map_address + (y3 * m_window_width) + x3];
             uint32_t tile_address = m_tileset_address + (tile_index * m_tile_width * m_tile_height);
 
-            int32_t xt = x + (int32_t)(x3 * m_tile_width);
-            int32_t yt = y + (int32_t)(y3 * m_tile_height);
+            int32_t xt = x + (int32_t)((x3 - x1) * m_tile_width);
+            int32_t yt = y + (int32_t)((y3 - y1) * m_tile_height);
 
             DrawTile(xt, yt, m_tile_width, m_tile_height, tile_address);
         }

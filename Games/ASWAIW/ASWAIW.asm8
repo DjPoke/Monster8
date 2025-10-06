@@ -331,7 +331,7 @@ settileset
 
 ; set current window for the map
 ld d0,0 ; coordinates to draw
-ld d1,0
+ld d1,13
 ld d2,20 ; width & height to draw
 ld d3,13
 setwindow

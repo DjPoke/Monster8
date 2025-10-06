@@ -1100,7 +1100,7 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
                         ToMemory(PC, (char)d[j]);
                     }
                 } else {
-                    char dt = Val(StringField(dat, 1, ",")) & 0xFF;
+                    uint8_t dt = Val(StringField(dat, i, ",")) & 0xFF;
                     ToMemory(PC, dt);
                 }
             }
