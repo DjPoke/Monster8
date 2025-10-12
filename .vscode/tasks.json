@@ -59,16 +59,76 @@
             }
         },
         {
-            "label": "Build Monster8Editor (Debug - MSYS2)",
+            "label": "CMake Configure (Debug)",
             "type": "shell",
-            "command": "C:\\msys64\\msys2_shell.cmd",
+            "windows": {
+                "command": "cmake",
+                "args": [
+                    "-B",
+                    "${workspaceFolder}/build",
+                    "-DCMAKE_BUILD_TYPE=Debug",
+                    "-G",
+                    "Ninja"
+                ]
+            },
+            "linux": {
+                "command": "cmake",
+                "args": [
+                    "-B",
+                    "${workspaceFolder}/build",
+                    "-DCMAKE_BUILD_TYPE=Debug"
+                ]
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "CMake Configure (Release)",
+            "type": "shell",
+            "windows": {
+                "command": "cmake",
+                "args": [
+                    "-B",
+                    "${workspaceFolder}/build",
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    "-G",
+                    "Ninja"
+                ]
+            },
+            "linux": {
+                "command": "cmake",
+                "args": [
+                    "-B",
+                    "${workspaceFolder}/build",
+                    "-DCMAKE_BUILD_TYPE=Release"
+                ]
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "CMake Build",
+            "type": "shell",
+            "command": "cmake",
             "args": [
-                "-mingw64",
-                "-defterm",
-                "-no-start",
-                "-here",
-                "-c",
-                "make debug"
+                "--build",
+                "${workspaceFolder}/build",
+                "-j",
+                "8"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -83,36 +143,26 @@
             }
         },
         {
-            "label": "Build Monster8Editor (Release - MSYS2)",
+            "label": "Clean Build Directory",
             "type": "shell",
-            "command": "C:\\msys64\\msys2_shell.cmd",
-            "args": [
-                "-mingw64",
-                "-defterm",
-                "-no-start",
-                "-here",
-                "-c",
-                "make release"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
+            "windows": {
+                "command": "if",
+                "args": [
+                    "exist",
+                    "build",
+                    "rmdir",
+                    "/s",
+                    "/q",
+                    "build"
+                ]
             },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": "build",
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Clean Current Build",
-            "type": "shell",
-            "command": "make",
-            "args": [
-                "clean"
-            ],
+            "linux": {
+                "command": "rm",
+                "args": [
+                    "-rf",
+                    "build"
+                ]
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -123,28 +173,14 @@
             }
         },
         {
-            "label": "Clean All Builds",
+            "label": "Run Monster8Editor",
             "type": "shell",
-            "command": "make",
-            "args": [
-                "clean-all"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
+            "windows": {
+                "command": "${workspaceFolder}/Monster8Editor.exe"
             },
-            "problemMatcher": [],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "Build Info",
-            "type": "shell",
-            "command": "make",
-            "args": [
-                "info"
-            ],
+            "linux": {
+                "command": "${workspaceFolder}/Monster8Editor"
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },

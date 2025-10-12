@@ -121,3 +121,17 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         ${CMAKE_BINARY_DIR}/../$<TARGET_FILE_NAME:${PROJECT_NAME}>
     COMMENT "Copie de l'exécutable vers le répertoire racine..."
 )
+
+# Copier les DLLs nécessaires dans le dossier build sur Windows
+# if(WIN32)
+#     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#             ${CMAKE_SOURCE_DIR}/Dll/SDL2.dll
+#             ${CMAKE_SOURCE_DIR}/Dll/SDL2_image.dll
+#             ${CMAKE_SOURCE_DIR}/Dll/SDL2_mixer.dll
+#             ${CMAKE_SOURCE_DIR}/Dll/libgcc_s_seh-1.dll
+#             ${CMAKE_SOURCE_DIR}/Dll/libstdc++-6.dll
+#             ${CMAKE_BINARY_DIR}/
+#         COMMENT "Copie des DLLs dans le dossier build..."
+#     )
+# endif()
