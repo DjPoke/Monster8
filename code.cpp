@@ -86,10 +86,12 @@ void ApplyCode::WriteLabelOrValue(uint32_t r, std::string dat, uint32_t l) {
     uint32_t addr = FindLabelAddress(StringField(dat, r, ","), l);
       
     if(addr > 0) {
+        ToMemory(PC, (addr & 0xFF000000) >> 24);
         ToMemory(PC, (addr & 0xFF0000) >> 16);
         ToMemory(PC, (addr & 0xFF00) >> 8);
         ToMemory(PC, addr & 0xFF);
     } else {
+        ToMemory(PC, (Val(StringField(dat, r, ",")) & 0xFF000000) >> 24);
         ToMemory(PC, (Val(StringField(dat, r, ",")) & 0xFF0000) >> 16);
         ToMemory(PC, (Val(StringField(dat, r, ",")) & 0xFF00) >> 8);
         ToMemory(PC, Val(StringField(dat, r, ",")) & 0xFF);
@@ -1024,9 +1026,11 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
         } else {
             ToMemory(PC, 0xFF);
             ToMemory(PC, 0x0F);
+            ToMemory(PC, (Val(StringField(dat, 1, ",")) & 0xFF000000) >> 24);
             ToMemory(PC, (Val(StringField(dat, 1, ",")) & 0xFF0000) >> 16);
             ToMemory(PC, (Val(StringField(dat, 1, ",")) & 0xFF00) >> 8);
             ToMemory(PC, Val(StringField(dat, 1, ",")) & 0xFF);
+            ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF000000) >> 24);
             ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF0000) >> 16);
             ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF00) >> 8);
             ToMemory(PC, Val(StringField(dat, 2, ",")) & 0xFF);
@@ -1037,9 +1041,11 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
         } else {
             ToMemory(PC, 0xFF);
             ToMemory(PC, 0x10);
+            ToMemory(PC, (Val(StringField(dat, 1, ",")) & 0xFF000000) >> 24);
             ToMemory(PC, (Val(StringField(dat, 1, ",")) & 0xFF0000) >> 16);
             ToMemory(PC, (Val(StringField(dat, 1, ",")) & 0xFF00) >> 8);
             ToMemory(PC, Val(StringField(dat, 1, ",")) & 0xFF);
+            ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF000000) >> 24);
             ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF0000) >> 16);
             ToMemory(PC, (Val(StringField(dat, 2, ",")) & 0xFF00) >> 8);
             ToMemory(PC, Val(StringField(dat, 2, ",")) & 0xFF);

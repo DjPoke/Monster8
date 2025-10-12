@@ -228,7 +228,7 @@ private:
     void SetPixel(int32_t x, int32_t y, uint8_t c);
     uint8_t GetPixel(uint32_t x, uint32_t y);
     void ScrollScreen(uint8_t scrollX, uint8_t scrollY);
-    uint8_t GetFlagsValue(uint32_t v1, uint32_t v2, string v3);
-    int32_t int24toint32(int32_t int24);
-    int32_t int32toint24(int32_t int32);
+    uint8_t GetFlagsValue(uint64_t v1, uint64_t v2, string v3);
+    bool IsOutOfMemory(uint32_t v);
+    void Halt();
 };

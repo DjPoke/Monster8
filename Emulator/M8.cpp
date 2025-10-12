@@ -115,8 +115,20 @@ void Monster8::loadROM(const char* filename) {
 }
 
 uint8_t Monster8::getOpcode() {
+    if(IsOutOfMemory(PC)) {
+        Halt();
+
+        return 0x01;
+    }
+
     uint8_t ret_value = memory[PC];
-    PC = (PC + 1) % 0x1000000;
+    PC++;
+
+    if(IsOutOfMemory(PC)) {
+        Halt();
+
+        return 0x01;
+    }
 
     return ret_value;
 }
@@ -133,25 +145,29 @@ void Monster8::emulateCycle() {
         case 0x00: // NOP (1 opcode)
             break;
         case 0x01: // Halt (1 opcode)
-            cout << "HALTED!" << endl;
-            halted = true;
+            Halt();
             break;
-        case 0x02: // Jump to Direct Address(3 opcodes)
+        case 0x02: // Jump to Direct Address(5 opcodes)
             {
-                uint8_t pcValueHIGH = getOpcode();
-                uint8_t pcValueMID = getOpcode();
-                uint8_t pcValueLOW = getOpcode();
-                PC = (pcValueHIGH << 16) | (pcValueMID << 8) | pcValueLOW;
+                uint8_t pcValue0 = getOpcode();
+                uint8_t pcValue1 = getOpcode();
+                uint8_t pcValue2 = getOpcode();
+                uint8_t pcValue3 = getOpcode();
+
+                PC = (pcValue0 << 24) | (pcValue1 << 16) | (pcValue2 << 8) | pcValue3;
             }
             break;
-        case 0x03: // Call Subroutine (3 opcodes)
+        case 0x03: // Call Subroutine (5 opcodes)
             {
-                uint8_t subValueHIGH = getOpcode();
-                uint8_t subValueMID = getOpcode();
-                uint8_t subValueLOW = getOpcode();
+                uint8_t subValue0 = getOpcode();
+                uint8_t subValue1 = getOpcode();
+                uint8_t subValue2 = getOpcode();
+                uint8_t subValue3 = getOpcode();
+
                 stack[SP] = PC;
                 SP--;
-                PC = (subValueHIGH << 16) | (subValueMID << 8) | subValueLOW;
+
+                PC = (subValue0 << 24) | (subValue1 << 16) | (subValue2 << 8) | subValue3;
             }
             break;
         case 0x04: // Return From Subroutine (1 opcode)
@@ -182,90 +198,90 @@ void Monster8::emulateCycle() {
         case 0x0C: // Jump To Address In A7 (1 opcode)
             PC = A[7];
             break;
-        case 0x0D: // jump if S flag is true
+        case 0x0D: // jump if S flag is true (5 opcodes)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(D[7] & (1 << FlagS)) {
                     PC = addr;
                 }
             }
             break;
-        case 0x0E:  // jump if S flag is false
+        case 0x0E:  // jump if S flag is false (5 opcodes)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(!(D[7] & (1 << FlagS))) {
                     PC = addr;
                 }
             }
             break;
-        case 0x0F: // Jump if Zero flag is true (3 opcode)
+        case 0x0F: // Jump if Zero flag is true (5 opcode)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(D[7] & (1 << FlagZ)) {
                     PC = addr;
                 }
             }
             break;
-        case 0x10: // Jump if not Zero flag is true (3 opcode)
+        case 0x10: // Jump if not Zero flag is true (5 opcode)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(!(D[7] & (1 << FlagZ))) {
                     PC = addr;
                 }
             }
             break;
-        case 0x11: // Jump if Half-Carry is true
+        case 0x11: // Jump if Half-Carry is true (5 opcodes)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(D[7] & (1 << FlagH)) {
                     PC = addr;
                 }
             }
             break;
-        case 0x12: // Jump if Half-Carry is false
+        case 0x12: // Jump if Half-Carry is false (5 opcodes)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(!(D[7] & (1 << FlagH))) {
                     PC = addr;
                 }
             }
             break;
-        case 0x13: // jump is PV flag is true
+        case 0x13: // jump is PV flag is true (5 opcodes)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(D[7] & (1 << FlagPV)) {
                     PC = addr;
                 }
             }
             break;
-        case 0x14:  // jump is PV flag is false
+        case 0x14:  // jump is PV flag is false (5 opcodes)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(!(D[7] & (1 << FlagPV))) {
                     PC = addr;
                 }
             }
             break;
-        case 0x15: // Jump if Carry flag is true (3 opcode)
+        case 0x15: // Jump if Carry flag is true (5 opcode)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(D[7] & (1 << FlagC)) {
                     PC = addr;
                 }
             }
             break;
-        case 0x16: // Jump if Carry flag is false (3 opcode)
+        case 0x16: // Jump if Carry flag is false (5 opcode)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 if(!(D[7] & (1 << FlagC))) {
                     PC = addr;
@@ -284,50 +300,50 @@ void Monster8::emulateCycle() {
                 PC = stack[SP];
             }
             break;
-        case 0X19: // Return if Zero flag ss true
+        case 0X19: // Return if Zero flag ss true (1 opcode)
             if(D[7] & (1 << FlagZ)) {
                 SP++;
                 PC = stack[SP];
             }
             break;
-        case 0x1A: // Return if Zero flag is false
+        case 0x1A: // Return if Zero flag is false (1 opcode)
             if(!(D[7] & (1 << FlagZ))) {
                 SP++;
                 PC = stack[SP];
             }
             break;
-        case 0X1B: // Return if Half-Carry flag is true
+        case 0X1B: // Return if Half-Carry flag is true (1 opcode)
             if(D[7] & (1 << FlagH)) {
                 SP++;
                 PC = stack[SP];
             }
             break;
-        case 0X1C: // Return if Half-Carry flag is false
+        case 0X1C: // Return if Half-Carry flag is false (1 opcode)
             if(!(D[7] & (1 << FlagH))) {
                 SP++;
                 PC = stack[SP];
             }
             break;
-        case 0X1D: // Return if overflow flag is true
+        case 0X1D: // Return if overflow flag is true (1 opcode)
             if(D[7] & (1 << FlagPV)) {
                 SP++;
                 PC = stack[SP];
             }
             break;
-        case 0X1E: // Return if overflow flag is false
+        case 0X1E: // Return if overflow flag is false (1 opcode)
             if(!(D[7] & (1 << FlagPV))) {
                 SP++;
                 PC = stack[SP];
 
             }
             break;
-        case 0X1F: // Return if Carry flag is true
+        case 0X1F: // Return if Carry flag is true (1 opcode)
             if(D[7] & (1 << FlagC)) {
                 SP++;
                 PC = stack[SP];
             }
             break;
-        case 0x20: // Return if Carry flag is false
+        case 0x20: // Return if Carry flag is false (1 opcode)
             if(!(D[7] & (1 << FlagC))) {
                 SP++;
                 PC = stack[SP];
@@ -363,29 +379,29 @@ void Monster8::emulateCycle() {
                 D[7] = GetFlagsValue(D[0], getOpcode(), "CP8");
             }
             break;
-        case 0x28: // Load Value Into 24 bits Register A0 (3 opcodes)
-            A[0] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x28: // Load Value Into 32 bits Register A0 (5 opcodes)
+            A[0] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
-        case 0x29: // Load Value Into 24 bits Register A1 (3 opcodes)
-            A[1] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x29: // Load Value Into 32 bits Register A1 (5 opcodes)
+            A[1] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
-        case 0x2A: // Load Value Into 24 bits Register A2 (3 opcodes)
-            A[2] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x2A: // Load Value Into 32 bits Register A2 (5 opcodes)
+            A[2] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
-        case 0x2B: // Load Value Into 24 bits Register A3 (3 opcodes)
-            A[3] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x2B: // Load Value Into 32 bits Register A3 (5 opcodes)
+            A[3] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
-        case 0x2C: // Load Value Into 24 bits Register A4 (3 opcodes)
-            A[4] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x2C: // Load Value Into 32 bits Register A4 (5 opcodes)
+            A[4] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
-        case 0x2D: // Load Value Into 24 bits Register A5 (3 opcodes)
-            A[5] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x2D: // Load Value Into 32 bits Register A5 (5 opcodes)
+            A[5] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
-        case 0x2E: // Load Value Into 24 bits Register A6 (3 opcodes)
-            A[6] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x2E: // Load Value Into 32 bits Register A6 (5 opcodes)
+            A[6] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
-        case 0x2F: // Load Value Into 24 bits Register A7 (3 opcodes)
-            A[7] = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+        case 0x2F: // Load Value Into 32 bits Register A7 (5 opcodes)
+            A[7] = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
             break;
         case 0x30: // Load Value Into 8 bits Register D0 (2 opcodes)
             D[0] = getOpcode();
@@ -409,46 +425,102 @@ void Monster8::emulateCycle() {
             D[6] = getOpcode();
             break;
         case 0x37: // Load [A0] into D0 (1 opcode)
-            D[0] = memory[A[0]];
+            if(IsOutOfMemory(A[0])) {
+                Halt();
+            } else {
+                D[0] = memory[A[0]];
+            }
             break;
         case 0x38: // Load [A1] into D1 (1 opcode)
-            D[1] = memory[A[1]];
+            if(IsOutOfMemory(A[1])) {
+                Halt();
+            } else {
+                D[1] = memory[A[1]];
+            }
             break;
         case 0x39: // Load [A2] into D2 (1 opcode)
-            D[2] = memory[A[2]];
+            if(IsOutOfMemory(A[2])) {
+                Halt();
+            } else {
+                D[2] = memory[A[2]];
+            }
             break;
         case 0x3A: // Load [A3] into D3 (1 opcode)
-            D[3] = memory[A[3]];
+            if(IsOutOfMemory(A[3])) {
+                Halt();
+            } else {
+                D[3] = memory[A[3]];
+            }
             break;
         case 0x3B: // Load [A4] into D4 (1 opcode)
-            D[4] = memory[A[4]];
+            if(IsOutOfMemory(A[4])) {
+                Halt();
+            } else {
+                D[4] = memory[A[4]];
+            }
             break;
         case 0x3C: // Load [A5] into D5 (1 opcode)
-            D[5] = memory[A[5]];
+            if(IsOutOfMemory(A[5])) {
+                Halt();
+            } else {
+                D[5] = memory[A[5]];
+            }
             break;
         case 0x3D: // Load [A6] into D6 (1 opcode)
-            D[6] = memory[A[6]];
+            if(IsOutOfMemory(A[6])) {
+                Halt();
+            } else {
+                D[6] = memory[A[6]];
+            }
             break;
         case 0x3E: // Load D0 into [A0] (1 opcode)
-            memory[A[0]] = D[0];
+            if(IsOutOfMemory(A[0])) {
+                Halt();
+            } else {
+                memory[A[0]] = D[0];
+            }
             break;
         case 0x3F: // Load D1 into [A1] (1 opcode)
-            memory[A[1]] = D[1];
+            if(IsOutOfMemory(A[1])) {
+                Halt();
+            } else {
+                memory[A[1]] = D[1];
+            }
             break;
         case 0x40: // Load D2 into [A2] (1 opcode)
-            memory[A[2]] = D[2];
+            if(IsOutOfMemory(A[2])) {
+                Halt();
+            } else {
+                memory[A[2]] = D[2];
+            }
             break;
         case 0x41: // Load D3 into [A3] (1 opcode)
-            memory[A[3]] = D[3];
+            if(IsOutOfMemory(A[3])) {
+                Halt();
+            } else {
+                memory[A[3]] = D[3];
+            }
             break;
         case 0x42: // Load D4 into [A4] (1 opcode)
-            memory[A[4]] = D[4];
+            if(IsOutOfMemory(A[4])) {
+                Halt();
+            } else {
+                memory[A[4]] = D[4];
+            }
             break;
         case 0x43: // Load D5 into [A5] (1 opcode)
-            memory[A[5]] = D[5];
+            if(IsOutOfMemory(A[5])) {
+                Halt();
+            } else {
+                memory[A[5]] = D[5];
+            }
             break;
         case 0x44: // Load D6 into [A6] (1 opcode)
-            memory[A[6]] = D[6];
+            if(IsOutOfMemory(A[6])) {
+                Halt();
+            } else {
+                memory[A[6]] = D[6];
+            }
             break;
         case 0X45: // Copy D0 into D1 (1 opcode)
             D[1] = D[0];
@@ -577,31 +649,47 @@ void Monster8::emulateCycle() {
             D[5] = D[6];
             break;
         case 0x6F: // LDI src=A[0], dst=A[1], length=A[2] (1 opcode)
-            memory[A[1] % 0x01000000] = memory[A[0] % 0x01000000];
-            A[0] = (A[0] + 1) % 0x01000000;
-            A[1] = (A[1] + 1) % 0x01000000;
-            A[2] = (A[2] - 1) % 0x01000000;
+            if(IsOutOfMemory(A[1]) || IsOutOfMemory(A[0])) {
+                Halt();
+            } else {
+                memory[A[1]] = memory[A[0]];
+                A[0]++;
+                A[1]++;
+                A[2]--;
+            }
             break;
         case 0x70: // LDIR src=A[0], dst=A[1], length=A[2] (1 opcode)
             while(A[2] > 0) {
-                memory[A[1] % 0x01000000] = memory[A[0] % 0x01000000];
-                A[0] = (A[0] + 1) % 0x01000000;
-                A[1] = (A[1] + 1) % 0x01000000;
-                A[2] = (A[2] - 1) % 0x01000000;
+                if(IsOutOfMemory(A[1]) || IsOutOfMemory(A[0])) {
+                    Halt();
+                } else {
+                    memory[A[1]] = memory[A[0]];
+                    A[0]++;
+                    A[1]++;
+                    A[2]--;
+                }
             }
             break;
         case 0x71: // LDD src=A[0], dst=A[1] (1 opcode)
-            memory[A[1] % 0x01000000] = memory[A[0] % 0x01000000];
-            A[0] = (A[0] - 1) % 0x01000000;
-            A[1] = (A[1] - 1) % 0x01000000;
-            A[2] = (A[2] - 1) % 0x01000000;
+            if(IsOutOfMemory(A[1]) || IsOutOfMemory(A[0])) {
+                Halt();
+            } else {
+                memory[A[1]] = memory[A[0]];
+                A[0]--;
+                A[1]--;
+                A[2]--;
+            }
             break;
         case 0x72: // LDDR src=A[0], dst=A[1], length=A[2] (1 opcode)
             while(A[2] > 0) {
-                memory[A[1] % 0x01000000] = memory[A[0] % 0x01000000];
-                A[0] = (A[0] - 1) % 0x01000000;
-                A[1] = (A[1] - 1) % 0x01000000;
-                A[2] = (A[2] - 1) % 0x01000000;
+                if(IsOutOfMemory(A[1]) || IsOutOfMemory(A[0])) {
+                    Halt();
+                } else {
+                    memory[A[1]] = memory[A[0]];
+                    A[0]--;
+                    A[1]--;
+                    A[2]--;
+                }
             }
             break;
         case 0x73: // Add D0 and D1 (1 opcode)
@@ -733,31 +821,31 @@ void Monster8::emulateCycle() {
             break;
         case 0x85: // Multiply A0 = A0 * A1 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[0], A[1], "MUL24");
+            D[7] = GetFlagsValue(A[0], A[1], "MUL32");
 
             // perform 24 bits multiplication
-            A[0] = (A[0] * A[1]) % 0x01000000;
+            A[0] = (A[0] * A[1]);
             break;
         case 0x86: // Multiply A0 = A0 * D0 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[0], D[0], "MUL24");
+            D[7] = GetFlagsValue(A[0], D[0], "MUL32");
 
             // perform 24 bits multiplication
-            A[0] = (A[0] * D[0]) % 0x01000000;
+            A[0] = (A[0] * D[0]);
             break;
         case 0x87: // Divide A0 = A0 / A1 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[0], A[1], "DIV24");
+            D[7] = GetFlagsValue(A[0], A[1], "DIV32");
 
             // perform 24 bits division
-            if (A[1] != 0) { A[0] = A[0] / A[1]; } else { A[0] = 0x00FFFFFF; }
+            if (A[1] != 0) { A[0] = A[0] / A[1]; } else { A[0] = 0xFFFFFFFF; }
             break;
         case 0x88: // Divide A0 = A0 / D0 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[0], D[0], "DIV24");
+            D[7] = GetFlagsValue(A[0], D[0], "DIV32");
 
             // perform 16 bits division
-            if (D[0] != 0) { A[0] = A[0] / D[0]; } else { A[0] = 0x00FFFFFF; }
+            if (D[0] != 0) { A[0] = A[0] / D[0]; } else { A[0] = 0xFFFFFFFF; }
             break;
         case 0x89: // Logical And D0 with D1 (1 opcode)
             D[0] = D[0] & D[1];
@@ -984,19 +1072,19 @@ void Monster8::emulateCycle() {
             stack[SP] = A[7];
             SP--;
             break;
-        case 0xBC: // Push D0/D1/D2 onto Stack (1 opcode)
+        case 0xBC: // Push D0-D2 onto Stack (1 opcode)
             stack[SP] = ((uint32_t)D[0] << 16) | ((uint32_t)D[1] << 8) | (uint32_t)D[2];
             SP--;
             break;
-        case 0xBD: // Push D1/D2/D3 onto Stack (1 opcode)
+        case 0xBD: // Push D1-D3 onto Stack (1 opcode)
             stack[SP] = ((uint32_t)D[1] << 16) | ((uint32_t)D[2] << 8) | (uint32_t)D[3];
             SP--;
             break;
-        case 0xBE: // Push D2/D3/D4 onto Stack (1 opcode)
+        case 0xBE: // Push D2-D4 onto Stack (1 opcode)
             stack[SP] = ((uint32_t)D[2] << 16) | ((uint32_t)D[3] << 8) | (uint32_t)D[4];
             SP--;
             break;
-        case 0xBF: // Push D3/D4/D5 onto Stack (1 opcode)
+        case 0xBF: // Push D3-D5 onto Stack (1 opcode)
             stack[SP] = ((uint32_t)D[3] << 16) | ((uint32_t)D[4] << 8) | (uint32_t)D[5];
             SP--;
             break;
@@ -1032,25 +1120,25 @@ void Monster8::emulateCycle() {
             SP++;
             A[7] = stack[SP];
             break;
-        case 0xC8: // Pop Stack into D0/D1/D2 (1 opcode)
+        case 0xC8: // Pop Stack into D0-D2 (1 opcode)
             SP++;
             D[0] = (uint8_t)(stack[SP] >> 16);
             D[1] = (uint8_t)(stack[SP] >> 8);
             D[2] = (uint8_t)(stack[SP] & 0xFF);
             break;
-        case 0xC9: // Pop Stack into D1/D2/D3 (1 opcode)
+        case 0xC9: // Pop Stack into D1-D3 (1 opcode)
             SP++;
             D[1] = (uint8_t)(stack[SP] >> 16);
             D[2] = (uint8_t)(stack[SP] >> 8);
             D[3] = (uint8_t)(stack[SP] & 0xFF);
             break;
-        case 0xCA: // Pop Stack into D2/D3/D4 (1 opcode)
+        case 0xCA: // Pop Stack into D2-D4 (1 opcode)
             SP++;
             D[2] = (uint8_t)(stack[SP] >> 16);
             D[3] = (uint8_t)(stack[SP] >> 8);
             D[4] = (uint8_t)(stack[SP] & 0xFF);
             break;
-        case 0xCB: // Pop Stack into D3/D4/D5 (1 opcode)
+        case 0xCB: // Pop Stack into D3-D5 (1 opcode)
             SP++;
             D[3] = (uint8_t)(stack[SP] >> 16);
             D[4] = (uint8_t)(stack[SP] >> 8);
@@ -1195,122 +1283,122 @@ void Monster8::emulateCycle() {
             break;
         case 0xDF: // Increment A0 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[0], 1, "INC24");
+            D[7] = GetFlagsValue(A[0], 1, "INC32");
 
             // perform 16 bits incrementation
             A[0]++;
             break;
         case 0xE0: // Increment A1 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[1], 1, "INC24");
+            D[7] = GetFlagsValue(A[1], 1, "INC32");
 
             // perform 16 bits incrementation
             A[1]++;
             break;
         case 0xE1: // Increment A2 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[2], 1, "INC24");
+            D[7] = GetFlagsValue(A[2], 1, "INC32");
 
             // perform 16 bits incrementation
             A[2]++;
             break;
         case 0xE2: // Increment A3 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[3], 1, "INC24");
+            D[7] = GetFlagsValue(A[3], 1, "INC32");
 
             // perform 16 bits incrementation
             A[3]++;
             break;
         case 0xE3: // Increment A4 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[4], 1, "INC24");
+            D[7] = GetFlagsValue(A[4], 1, "INC32");
 
             // perform 16 bits incrementation
             A[4]++;
             break;
         case 0xE4: // Increment A5 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[5], 1, "INC24");
+            D[7] = GetFlagsValue(A[5], 1, "INC32");
 
             // perform 16 bits incrementation
             A[5]++;
             break;
         case 0xE5: // Increment A6 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[6], 1, "INC24");
+            D[7] = GetFlagsValue(A[6], 1, "INC32");
 
             // perform 16 bits incrementation
             A[6]++;
             break;
         case 0xE6: // Increment A7 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[7], 1, "INC24");
+            D[7] = GetFlagsValue(A[7], 1, "INC32");
 
             // perform 16 bits incrementation
             A[7]++;
             break;
         case 0xE7: // Decrement A0 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[0], 1, "DEC24");
+            D[7] = GetFlagsValue(A[0], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[0]--;
             break;
         case 0xE8: // Decrement A1 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[1], 1, "DEC24");
+            D[7] = GetFlagsValue(A[1], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[1]--;
             break;
         case 0xE9: // Decrement A2 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[2], 1, "DEC24");
+            D[7] = GetFlagsValue(A[2], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[2]--;
             break;
         case 0xEA: // Decrement A3 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[3], 1, "DEC24");
+            D[7] = GetFlagsValue(A[3], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[3]--;
             break;
         case 0xEB: // Decrement A4 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[4], 1, "DEC24");
+            D[7] = GetFlagsValue(A[4], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[4]--;
             break;
         case 0xEC: // Decrement A5 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[5], 1, "DEC24");
+            D[7] = GetFlagsValue(A[5], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[5]--;
             break;
         case 0xED: // Decrement A6 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[6], 1, "DEC24");
+            D[7] = GetFlagsValue(A[6], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[6]--;
             break;
         case 0xEE: // Decrement A7 (1 opcode)
             // set or reset flags
-            D[7] = GetFlagsValue(A[7], 1, "DEC24");
+            D[7] = GetFlagsValue(A[7], 1, "DEC32");
 
             // perform 16 bits decrementation
             A[7]--;
             break;
-        case 0xEF: // Compare A0 with Immediate Value (2 opcode)
+        case 0xEF: // Compare A0 with Immediate Value (5 opcode)
             {
-                uint32_t addr = (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
+                uint32_t addr = (getOpcode() << 24) | (getOpcode() << 16) | (getOpcode() << 8) | getOpcode();
 
                 // set or reset flags
-                D[7] = GetFlagsValue(A[0], addr, "CP24");
+                D[7] = GetFlagsValue(A[0], addr, "CP32");
             }
             break;
         case 0xFF:
@@ -1321,30 +1409,30 @@ void Monster8::emulateCycle() {
                     case 0x00:
                         ClearScreen();
                         break;
-                    case 0x01: // Draw Sprite (5 opcodes)
+                    case 0x01: // Draw Sprite (1 opcodes)
                         {
-                            int32_t x = A[0];
-                            int32_t y = A[1];
+                            int32_t x = (int32_t)A[0];
+                            int32_t y = (int32_t)A[1];
                             uint8_t width = D[0];
                             uint8_t height = D[1];
                             uint32_t spriteAddress = A[2];
                             DrawSprite(x, y, width, height, spriteAddress);
                         }
                         break;
-                    case 0x02: // Draw Block from Screen to Memory (5 opcodes)
+                    case 0x02: // Draw Block from Screen to Memory (1 opcodes)
                         {
-                            int32_t x = A[0];
-                            int32_t y = A[1];
+                            int32_t x = (int32_t)A[0];
+                            int32_t y = (int32_t)A[1];
                             uint8_t width = D[0];
                             uint8_t height = D[1];
                             uint32_t spriteAddress = A[2];
                             DrawBlock(x, y, width, height, spriteAddress);
                         }
                         break;
-                    case 0x03: // Grab Block from Memory to Screen (5 opcodes)
+                    case 0x03: // Grab Block from Memory to Screen (1 opcodes)
                         {
-                            int32_t x = A[0];
-                            int32_t y = A[1];
+                            int32_t x = (int32_t)A[0];
+                            int32_t y = (int32_t)A[1];
                             uint8_t width = D[0];
                             uint8_t height = D[1];
                             uint32_t spriteAddress = A[2];
@@ -1365,12 +1453,14 @@ void Monster8::emulateCycle() {
                     case 0x06: // Print Character In D0 (1 opcode)
                         D[7] = PrintChar(D[0]);
                         break;
-                    case 0x07: // Print a Text (3 opcodes)
+                    case 0x07: // Print a Text (5 opcodes)
                         {
-                            uint8_t txtAddrHIGH = getOpcode();
-                            uint8_t txtAddrMID = getOpcode();
-                            uint8_t txtAddrLOW = getOpcode();
-                            uint32_t txtAddress = (txtAddrHIGH << 16) | (txtAddrMID << 8) | txtAddrLOW;
+                            uint8_t txtAddr0 = getOpcode();
+                            uint8_t txtAddr1 = getOpcode();
+                            uint8_t txtAddr2 = getOpcode();
+                            uint8_t txtAddr3 = getOpcode();
+                            uint32_t txtAddress = (txtAddr0 << 24) | (txtAddr1 << 16) | (txtAddr2 << 8) | txtAddr3;
+
                             D[7] = PrintString(txtAddress);
                         }
                         break;
@@ -1387,7 +1477,7 @@ void Monster8::emulateCycle() {
                         SetPixel(A[0], A[1], D[0]);
                         break;
                     case 0x0C: // Get pixel color at A0, A1 in D0 (1 opcode)
-                        D[1] = GetPixel(A[0], A[1]);
+                        D[0] = GetPixel(A[0], A[1]);
                         break;
                     case 0x0D: // Scroll Screen (3 opcode)
                         {
@@ -1400,32 +1490,44 @@ void Monster8::emulateCycle() {
                     case 0x0E: // Flip Screen (1 opcode)
                         Flip();
                         break;
-                    case 0x0F: // Play Sound (5 opcodes)
+                    case 0x0F: // Play Sound (9 opcodes)
                         {
-                            uint8_t sndAddrHIGH = getOpcode();
-                            uint8_t sndAddrMID = getOpcode();
-                            uint8_t sndAddrLOW = getOpcode();
-                            uint32_t soundAddress = (sndAddrHIGH << 16) | (sndAddrMID << 8) | sndAddrLOW;
-                            uint8_t sndLenHIGH = getOpcode();
-                            uint8_t sndLenMID = getOpcode();
-                            uint8_t sndLenLOW = getOpcode();
-                            uint32_t soundLength = (sndLenHIGH << 16) | (sndLenMID << 8) | sndLenLOW;
+                            uint8_t sndAddr0 = getOpcode();
+                            uint8_t sndAddr1 = getOpcode();
+                            uint8_t sndAddr2 = getOpcode();
+                            uint8_t sndAddr3 = getOpcode();
+                            uint32_t soundAddress = (sndAddr0 << 24) | (sndAddr1 << 16) | (sndAddr2 << 8) | sndAddr3;
+                            uint8_t sndLen0 = getOpcode();
+                            uint8_t sndLen1 = getOpcode();
+                            uint8_t sndLen2 = getOpcode();
+                            uint8_t sndLen3 = getOpcode();
+                            uint32_t soundLength = (sndLen0 << 24) | (sndLen1 << 16) | (sndLen2 << 8) | sndLen3;
 
-                            PlaySound(soundAddress, soundLength);
+                            if(IsOutOfMemory(soundAddress) || IsOutOfMemory(soundAddress + soundLength)) {
+                                Halt();
+                            } else {
+                                PlaySound(soundAddress, soundLength);
+                            }
                         }
                         break;
                     case 0x10: // Play Music In Audio Memory (5 opcodes)
                         {
-                            uint8_t sndAddrHIGH = getOpcode();
-                            uint8_t sndAddrMID = getOpcode();
-                            uint8_t sndAddrLOW = getOpcode();
-                            uint32_t soundAddress = (sndAddrHIGH << 16) | (sndAddrMID << 8) | sndAddrLOW;
-                            uint8_t sndLenHIGH = getOpcode();
-                            uint8_t sndLenMID = getOpcode();
-                            uint8_t sndLenLOW = getOpcode();
-                            uint32_t soundLength = (sndLenHIGH << 16) | (sndLenMID << 8) | sndLenLOW;
+                            uint8_t sndAddr0 = getOpcode();
+                            uint8_t sndAddr1 = getOpcode();
+                            uint8_t sndAddr2 = getOpcode();
+                            uint8_t sndAddr3 = getOpcode();
+                            uint32_t soundAddress = (sndAddr0 << 24) | (sndAddr1 << 16) | (sndAddr2 << 8) | sndAddr3;
+                            uint8_t sndLen0 = getOpcode();
+                            uint8_t sndLen1 = getOpcode();
+                            uint8_t sndLen2 = getOpcode();
+                            uint8_t sndLen3 = getOpcode();
+                            uint32_t soundLength = (sndLen0 << 24) | (sndLen1 << 16) | (sndLen2 << 8) | sndLen3;
 
-                            PlayMusic(soundAddress, soundLength);
+                            if(IsOutOfMemory(soundAddress) || IsOutOfMemory(soundAddress + soundLength)) {
+                                Halt();
+                            } else {
+                                PlayMusic(soundAddress, soundLength);
+                            }
                         }
                         break;
                     case 0x11: // Stop Music playback (1 opcode)
@@ -1448,8 +1550,8 @@ void Monster8::emulateCycle() {
                         break;
                     case 0x15: // Draw map (1 opcode)
                         {
-                            int32_t x = A[0];
-                            int32_t y = A[1];
+                            int32_t x = ((int32_t)A[0]);
+                            int32_t y = ((int32_t)A[1]);
 
                             DrawWindow(x, y);
                         }
@@ -1764,7 +1866,7 @@ void Monster8::ClearScreen() {
     }
 }
 
-uint8_t Monster8::GetFlagsValue(uint32_t v1, uint32_t v2, string v3) {
+uint8_t Monster8::GetFlagsValue(uint64_t v1, uint64_t v2, string v3) {
     if(v3 == "ADD8") {
         // set or reset PV flag (oVerflow flag)
         if((v1 + v2) > 0xFF) { D[7] |= (1 << FlagPV); } else { D[7] &= ~(1 << FlagPV); }
@@ -1819,25 +1921,25 @@ uint8_t Monster8::GetFlagsValue(uint32_t v1, uint32_t v2, string v3) {
 
         // reset flag N
         D[7] &= ~(1 << FlagN);
-    } else if(v3 == "MUL24") {
+    } else if(v3 == "MUL32") {
         // set or reset PV flag (oVerflow flag)
-        if((v1 * v2) > 0xFFFFFF) { D[7] |= (1 << FlagPV); } else { D[7] &= ~(1 << FlagPV); }
+        if((v1 * v2) > 0xFFFFFFFF) { D[7] |= (1 << FlagPV); } else { D[7] &= ~(1 << FlagPV); }
 
         // set or reset flag C
-        if((v1 * v2) > 0xFFFFFF) { D[7] |= (1 << FlagC); } else { D[7] &= ~(1 << FlagC); }
+        if((v1 * v2) > 0xFFFFFFFF) { D[7] |= (1 << FlagC); } else { D[7] &= ~(1 << FlagC); }
 
         // set or reset flag S
-        if((v1 * v2) > 0x7FFFFF) { D[7] |= (1 << FlagS); } else { D[7] &= ~(1 << FlagS); }
+        if((v1 * v2) > 0x7FFFFFFF) { D[7] |= (1 << FlagS); } else { D[7] &= ~(1 << FlagS); }
 
         // set or reset flag Z
-        if((v1 * v2) % 0x01000000 == 0x000000) { D[7] |= (1 << FlagZ); } else { D[7] &= ~(1 << FlagZ); }
+        if((v1 * v2) == 0x000000) { D[7] |= (1 << FlagZ); } else { D[7] &= ~(1 << FlagZ); }
 
         // set or reset flag H
-        if((v1 * v2) > 0x000FFFFF) { D[7] |= (1 << FlagH); } else { D[7] &= ~(1 << FlagH); }
+        if((v1 * v2) > 0x0FFFFFFF) { D[7] |= (1 << FlagH); } else { D[7] &= ~(1 << FlagH); }
 
         // reset flag N
         D[7] &= ~(1 << FlagN);
-    } else if(v3 == "DIV24") {
+    } else if(v3 == "DIV32") {
         if(v2 == 0) {
             D[7] = 0xFF; // division by zero
         } else {
@@ -1891,7 +1993,7 @@ uint8_t Monster8::GetFlagsValue(uint32_t v1, uint32_t v2, string v3) {
 
         // set flag N
         D[7] |= (1 << FlagN);
-    } else if(v3 == "CP24") {
+    } else if(v3 == "CP32") {
         // set or reset PV flag (oVerflow flag)
         if(v1 < v2) { D[7] |= (1 << FlagPV); } else { D[7] &= ~(1 << FlagPV); }
 
@@ -1899,13 +2001,13 @@ uint8_t Monster8::GetFlagsValue(uint32_t v1, uint32_t v2, string v3) {
         if(v1 < v2) { D[7] |= (1 << FlagC); } else { D[7] &= ~(1 << FlagC); }
 
         // set or reset flag S
-        if(((v1 - v2) % 0x1000000 ) > 0x7FFFFF) { D[7] |= (1 << FlagS); } else { D[7] &= ~(1 << FlagS); }
+        if(((v1 - v2)) > 0x7FFFFFFF) { D[7] |= (1 << FlagS); } else { D[7] &= ~(1 << FlagS); }
 
         // set or reset flag Z
-        if((v1 - v2) % 0x1000000 == 0x000000) { D[7] |= (1 << FlagZ); } else { D[7] &= ~(1 << FlagZ); }
+        if((v1 - v2) == 0x00000000) { D[7] |= (1 << FlagZ); } else { D[7] &= ~(1 << FlagZ); }
 
         // set or reset flag H
-        if(((v1 - v2) % 0x1000000) > 0x0FFFFF) { D[7] |= (1 << FlagH); } else { D[7] &= ~(1 << FlagH); }
+        if((v1 - v2) > 0x0FFFFFFF) { D[7] |= (1 << FlagH); } else { D[7] &= ~(1 << FlagH); }
 
         // set flag N
         D[7] |= (1 << FlagN);
@@ -1922,30 +2024,21 @@ uint8_t Monster8::GetFlagsValue(uint32_t v1, uint32_t v2, string v3) {
     return D[7];
 }
 
-// convert 24 bits signed integer to 32 bits signed integer
-int32_t Monster8::int24toint32(int32_t int24) {
-    int32_t int32;
-
-    int24 = int24 % 0x1000000;
-
-    if ((int24 & 0x800000) != 0) {
-        int32 = int24 | 0xff000000;
-    } else {
-        int32 = int24;
+bool Monster8::IsOutOfMemory(uint32_t v) {
+    if(v >= 0x01000000) {
+        return true;
     }
 
-    return int32;
+    return false;
 }
 
-// convert 32 bits signed integer to 24 bits signed integer
-int32_t Monster8::int32toint24(int32_t int32) {
-    int32_t int24;
+void Monster8::Halt() {
+    halted = true;
 
-    if ((int32 & 0x80000000) != 0) {
-        int24 = (int32 & 0xffffff) | 0x800000;
-    } else {
-        int24 = int32 % 0x1000000;
-    }
-
-    return int24;
+    paper = 255;
+    pen = 0;
+    border = 255;
+    Locate(1,1);
+    WriteString(0x000000,"HALTED");
+    PrintString(0x000000);
 }
