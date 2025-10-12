@@ -297,8 +297,11 @@ call InitializeGame
 ; main loop
 ; =========
 MainLoop:
+call RestoreBackgrounds
 call AnimatePlayer
 call MovePlayer
+call ScrollDown
+call RedrawSprites
 flip
 call SlowDown
 jp MainLoop
@@ -312,10 +315,15 @@ pen 255
 border 0
 cls
 
-ld a0,144
+; position the player
+ld a1,144
 call SetPX
 ld a1,164
 call SetPY
+
+; set the scrolling value
+ld a1,0xfffffe70
+call SetScrolling
 
 ; set current map
 ld a0,map1 ; map address in memory
@@ -331,25 +339,53 @@ settileset
 
 ; set current window for the map
 ld d0,0 ; coordinates to draw
-ld d1,13
+ld d1,0
 ld d2,20 ; width & height to draw
-ld d3,13
+ld d3,25
 setwindow
 
 ; draw the map's window at coordinates
+call GetScrolling
+push a0
+pop a1
 ld a0,0
-ld a1,0
 drawmap
 
-call StorePlayerBG
-call DrawPlayer
+; redraw all sprites for the first time
+call RedrawSprites
 ret
 
-; ============
-; get px in a0
-; ============
-GrabPX:
-ld a0,px
+; =================
+; set 32 bits value
+; =================
+; a0: address
+; a1: value
+; =================
+Set32:
+push a1
+pop d0-d3
+ld [a0],d0
+push a0
+pop a1
+inc a1
+ld [a1],d1
+push a1
+pop a2
+inc a2
+ld [a2],d2
+push a2
+pop a3
+inc a3
+ld [a3],d3
+ret
+
+; =================
+; get 32 bits value
+; =================
+; a0: address
+; out: a0: value
+; =================
+Get32:
 ld d0,[a0]
 push a0
 pop a1
@@ -359,74 +395,74 @@ push a1
 pop a2
 inc a2
 ld d2,[a2]
-push d0-d2
+push a2
+pop a3
+inc a3
+ld d3,[a3]
+push d0-d3
+pop a0
+ret
+
+; ==========================
+; set the vertical scrolling
+; ==========================
+SetScrolling:
+ld a0,scrolly
+call Set32
+ret
+
+; ==========================
+; get the vertical scrolling
+; ==========================
+GetScrolling:
+ld a0,scrolly
+call Get32
+ret
+
+; ============
+; get px in a1
+; ============
+GetPX:
+push a0
+ld a0,px
+call Get32
+push a0
+pop a1
 pop a0
 ret
 
 ; ============
 ; get py in a1
 ; ============
-GrabPY:
+GetPY:
 push a0
 ld a0,py
-ld d0,[a0]
+call Get32
 push a0
-pop a1
-inc a1
-ld d1,[a1]
-push a1
-pop a2
-inc a2
-ld d2,[a2]
-push d0-d2
 pop a1
 pop a0
 ret
 
 ; ============
-; set px in a0
+; set px in a1
 ; ============
 SetPX:
-push a0
-pop d0-d2
 ld a0,px
-ld [a0],d0
-push a0
-pop a1
-inc a1
-ld [a1],d1
-push a1
-pop a2
-inc a2
-ld [a2],d2
+call Set32
 ret
 
 ; ============
 ; set py in a1
 ; ============
 SetPY:
-push a0
-push a1
-pop d0-d2
 ld a0,py
-ld [a0],d0
-push a0
-pop a1
-inc a1
-ld [a1],d1
-push a1
-pop a2
-inc a2
-ld [a2],d2
-pop a0
+call Set32
 ret
 
 ; ===============
 ; move the player
 ; ===============
 MovePlayer:
-call RestorePlayerBG
-
 getjoystick  ; get joystick input in D0
 ld d1,0x04 ; left joystick value
 and d1
@@ -434,8 +470,8 @@ cp d1
 jp nz,MPNotMoveLeft
 
 ; move left
-call GrabPX
-dec a0
+call GetPX
+dec a1
 call SetPX
 call LimitPXLeft
 
@@ -448,33 +484,34 @@ cp d1
 jp nz,MPNotMoveRight
 
 ; move right
-call GrabPX
-inc a0
+call GetPX
+inc a1
 call SetPX
 call LimitPXRight
 
 MPNotMoveRight:
-
-call StorePlayerBG
-call DrawPlayer
 ret
 
 ; ========================
 ; limit player's movements
 ; ========================
 LimitPXLeft:
-call GrabPX
+call GetPX
+push a1
+pop a0
 cp a0,1
 ret nc
-ld a0,1
+ld a1,1
 call SetPX
 ret
 
 LimitPXRight:
-call GrabPX
+call GetPX
+push a1
+pop a0
 cp a0,287
 ret c
-ld a0,287
+ld a1,287
 call SetPX
 ret
 
@@ -482,8 +519,10 @@ ret
 ; store player's background
 ; =========================
 StorePlayerBG:
-call GrabPX
-call GrabPY
+call GetPX
+push a1
+call GetPY
+pop a0
 ld d0,32
 ld d1,32
 ld a2,pbg
@@ -496,15 +535,18 @@ ret
 DrawPlayer:
 ld d0,0
 ld d1,0
-ld a2,pframe
-ld d2,[a2]
-push d0-d2
+ld d2,0
+ld a3,pframe
+ld d3,[a3]
+push d0-d3
 pop a0 ; a0 contient le numéro de frame (0 ou 1)
 ld a1,0x400
 mult a0,a1
 push a0
-call GrabPX
-call GrabPY
+call GetPX
+push a1
+call GetPY
+pop a0
 ld d0,32
 ld d1,32
 pop a2
@@ -515,12 +557,29 @@ ret
 ; restore player's background
 ; ===========================
 RestorePlayerBG:
-call GrabPX
-call GrabPY
+call GetPX
+push a1
+call GetPY
+pop a0
 ld d0,32
 ld d1,32
 ld a2,pbg
 block ; draw background block at a0,a1, d0,d1, a2
+ret
+
+; ==================================
+; restore background for all sprites
+; ==================================
+RestoreBackgrounds:
+call RestorePlayerBG
+ret
+
+; ==================================================
+; redraw all sprites, grabing their background first
+; ==================================================
+RedrawSprites:
+call StorePlayerBG
+call DrawPlayer
 ret
 
 ; ==============
@@ -539,29 +598,61 @@ APEnd:
 ld [a0],d0
 ret
 
+; ==========================
+; scroll down the background
+; ==========================
+ScrollDown:
+ld a0,scrollframe
+ld d0,[a0]
+inc d0
+ld [a0],d0
+cp 8 ; value to change for scrolling speed
+ret c
+ld d0,0
+ld [a0],d0
+call GetScrolling
+inc a0
+push a0
+pop a1
+call SetScrolling
+ld a0,scrolly
+call Get32 ; get scrolling in a0
+push a0
+pop a1
+ld a0,0
+drawmap
+ret
+
 ; =================
 ; slowdown the game
 ; =================
 SlowDown:
-ld a0,0x2000
-sd_loop:
+ld a0,0x1000
+SD_Loop:
 dec a0
 push a0
-pop d0-d2
+pop d0-d3
 add d1
 add d2
+add d3
 cp 0
 ret z
-jp sd_loop
+jp SD_Loop
 
 ; ====
 ; data
 ; ====
-px: db 0, 0, 0
-py: db 0, 0, 0
+px: dl 0
+py: dl 0
 
 ; frame animation for the player
 pframe: db 0
+
+; scrolling value
+scrolly: dl 0
+
+; slowdown the scrolling
+scrollframe: db 0
 
 ; player's background
 pbg: ds 1024,0

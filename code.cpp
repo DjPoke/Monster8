@@ -301,6 +301,8 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
                 ToMemory(PC, 0xEF);
                 
                 WriteLabelOrValue(2, dat, l);
+            } else {
+                return "Bad parameters at line " + std::to_string(l);
             }
         }
     } else if(cmd == "LD") {
@@ -734,13 +736,13 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
                 ToMemory(PC, 0xBA);
             } else if(dat == "A7") {
                 ToMemory(PC, 0xBB);
-            } else if(dat == "D0-D2") {
+            } else if(dat == "D0-D3") {
                 ToMemory(PC, 0xBC);
-            } else if(dat == "D1-D3") {
+            } else if(dat == "D1-D4") {
                 ToMemory(PC, 0xBD);
-            } else if(dat == "D2-D4") {
+            } else if(dat == "D2-D5") {
                 ToMemory(PC, 0xBE);
-            } else if(dat == "D3-D5") {
+            } else if(dat == "D3-D6") {
                 ToMemory(PC, 0xBF);
             } else {
                 return "Bad parameters at line " + std::to_string(l);                
@@ -766,13 +768,13 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
                 ToMemory(PC, 0xC6);
             } else if(dat == "A7") {
                 ToMemory(PC, 0xC7);
-            } else if(dat == "D0-D2") {
+            } else if(dat == "D0-D3") {
                 ToMemory(PC, 0xC8);
-            } else if(dat == "D1-D3") {
+            } else if(dat == "D1-D4") {
                 ToMemory(PC, 0xC9);
-            } else if(dat == "D2-D4") {
+            } else if(dat == "D2-D5") {
                 ToMemory(PC, 0xCA);
-            } else if(dat == "D3-D5") {
+            } else if(dat == "D3-D6") {
                 ToMemory(PC, 0xCB);
             } else {
                 return "Bad parameters at line " + std::to_string(l);                
@@ -1101,6 +1103,40 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
                     uint8_t dt = Val(StringField(dat, i, ",")) & 0xFF;
                     ToMemory(PC, dt);
                 }
+            }
+        }
+    } else if(cmd == "DW") {
+        if(dat == "") {
+            return "Bad parameters at line " + std::to_string(l);
+        } else {
+            for(uint32_t i = 1; i <= CountString(dat, ","); i++) {
+                std::string d = StringField(dat, i, ",");
+
+                uint16_t dt = Val(StringField(dat, i, ",")) & 0xFFFF;
+                uint8_t dt0 = (dt & 0xFF00) >> 8;
+                uint8_t dt1 = dt & 0xFF;
+
+                ToMemory(PC, dt0);                
+                ToMemory(PC, dt1);
+            }
+        }
+    } else if(cmd == "DL") {
+        if(dat == "") {
+            return "Bad parameters at line " + std::to_string(l);
+        } else {
+            for(uint32_t i = 1; i <= CountString(dat, ","); i++) {
+                std::string d = StringField(dat, i, ",");
+
+                uint16_t dt = Val(StringField(dat, i, ",")) & 0xFFFFFFFF;
+                uint8_t dt0 = (dt & 0xFF000000) >> 24;
+                uint8_t dt1 = (dt & 0xFF0000) >> 16;
+                uint8_t dt2 = (dt & 0xFF00) >> 8;
+                uint8_t dt3 = dt & 0xFF;
+
+                ToMemory(PC, dt0);                
+                ToMemory(PC, dt1);
+                ToMemory(PC, dt2);
+                ToMemory(PC, dt3);
             }
         }
     } else if(cmd == "DS") {

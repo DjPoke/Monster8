@@ -1072,20 +1072,20 @@ void Monster8::emulateCycle() {
             stack[SP] = A[7];
             SP--;
             break;
-        case 0xBC: // Push D0-D2 onto Stack (1 opcode)
-            stack[SP] = ((uint32_t)D[0] << 16) | ((uint32_t)D[1] << 8) | (uint32_t)D[2];
+        case 0xBC: // Push D0-D3 onto Stack (1 opcode)
+            stack[SP] = ((uint32_t)D[0] << 24) | ((uint32_t)D[1] << 16) | ((uint32_t)D[2] << 8) | (uint32_t)D[3];
             SP--;
             break;
-        case 0xBD: // Push D1-D3 onto Stack (1 opcode)
-            stack[SP] = ((uint32_t)D[1] << 16) | ((uint32_t)D[2] << 8) | (uint32_t)D[3];
+        case 0xBD: // Push D1-D4 onto Stack (1 opcode)
+            stack[SP] = ((uint32_t)D[1] << 24) | ((uint32_t)D[2] << 16) | ((uint32_t)D[3] << 8) | (uint32_t)D[4];
             SP--;
             break;
-        case 0xBE: // Push D2-D4 onto Stack (1 opcode)
-            stack[SP] = ((uint32_t)D[2] << 16) | ((uint32_t)D[3] << 8) | (uint32_t)D[4];
+        case 0xBE: // Push D2-D5 onto Stack (1 opcode)
+            stack[SP] = ((uint32_t)D[2] << 24) | ((uint32_t)D[3] << 16) | ((uint32_t)D[4] << 8) | (uint32_t)D[5];
             SP--;
             break;
-        case 0xBF: // Push D3-D5 onto Stack (1 opcode)
-            stack[SP] = ((uint32_t)D[3] << 16) | ((uint32_t)D[4] << 8) | (uint32_t)D[5];
+        case 0xBF: // Push D3-D6 onto Stack (1 opcode)
+            stack[SP] = ((uint32_t)D[3] << 24) | ((uint32_t)D[4] << 16) | ((uint32_t)D[5] << 8) | (uint32_t)D[6];
             SP--;
             break;
         case 0xC0: // Pop Stack into A0 (1 opcode)
@@ -1120,29 +1120,33 @@ void Monster8::emulateCycle() {
             SP++;
             A[7] = stack[SP];
             break;
-        case 0xC8: // Pop Stack into D0-D2 (1 opcode)
+        case 0xC8: // Pop Stack into D0-D3 (1 opcode)
             SP++;
-            D[0] = (uint8_t)(stack[SP] >> 16);
-            D[1] = (uint8_t)(stack[SP] >> 8);
-            D[2] = (uint8_t)(stack[SP] & 0xFF);
-            break;
-        case 0xC9: // Pop Stack into D1-D3 (1 opcode)
-            SP++;
+            D[0] = (uint8_t)(stack[SP] >> 24);
             D[1] = (uint8_t)(stack[SP] >> 16);
             D[2] = (uint8_t)(stack[SP] >> 8);
             D[3] = (uint8_t)(stack[SP] & 0xFF);
             break;
-        case 0xCA: // Pop Stack into D2-D4 (1 opcode)
+        case 0xC9: // Pop Stack into D1-D4 (1 opcode)
             SP++;
+            D[1] = (uint8_t)(stack[SP] >> 24);
             D[2] = (uint8_t)(stack[SP] >> 16);
             D[3] = (uint8_t)(stack[SP] >> 8);
             D[4] = (uint8_t)(stack[SP] & 0xFF);
             break;
-        case 0xCB: // Pop Stack into D3-D5 (1 opcode)
+        case 0xCA: // Pop Stack into D2-D5 (1 opcode)
             SP++;
+            D[2] = (uint8_t)(stack[SP] >> 24);
             D[3] = (uint8_t)(stack[SP] >> 16);
             D[4] = (uint8_t)(stack[SP] >> 8);
             D[5] = (uint8_t)(stack[SP] & 0xFF);
+            break;
+        case 0xCB: // Pop Stack into D3-D6 (1 opcode)
+            SP++;
+            D[3] = (uint8_t)(stack[SP] >> 24);
+            D[4] = (uint8_t)(stack[SP] >> 16);
+            D[5] = (uint8_t)(stack[SP] >> 8);
+            D[6] = (uint8_t)(stack[SP] & 0xFF);
             break;
         case 0xCC: // Shift left D0 (1 opcode)
             // set or reset flags
