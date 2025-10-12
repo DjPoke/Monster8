@@ -715,7 +715,7 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
             }
         }
     } else if(cmd == "PUSH") {
-        if((CountString(dat, ",") != 1) && (CountString(dat, ",") != 3)) {
+        if(CountString(dat, ",") != 1) {
             return "Bad parameters at line " + std::to_string(l);
         } else if(CountString(dat, ",") == 1) {
             if(dat == "A0") {
@@ -734,24 +734,20 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
                 ToMemory(PC, 0xBA);
             } else if(dat == "A7") {
                 ToMemory(PC, 0xBB);
-            } else {
-                return "Bad parameters at line " + std::to_string(l);                
-            }
-        } else if(CountString(dat, ",") == 3) {
-            if(dat == "D0,D1,D2") {
+            } else if(dat == "D0-D2") {
                 ToMemory(PC, 0xBC);
-            } else if(dat == "D1,D2,D3") {
+            } else if(dat == "D1-D3") {
                 ToMemory(PC, 0xBD);
-            } else if(dat == "D2,D3,D4") {
+            } else if(dat == "D2-D4") {
                 ToMemory(PC, 0xBE);
-            } else if(dat == "D3,D4,D5") {
+            } else if(dat == "D3-D5") {
                 ToMemory(PC, 0xBF);
             } else {
                 return "Bad parameters at line " + std::to_string(l);                
             }
         }
     } else if(cmd == "POP") {
-        if((CountString(dat, ",") != 1) && (CountString(dat, ",") != 3)) {
+        if(CountString(dat, ",") != 1) {
             return "Bad parameters at line " + std::to_string(l);
         } else if(CountString(dat, ",") == 1) {
             if(dat == "A0") {
@@ -770,17 +766,13 @@ std::string ApplyCode::CompileLine(std::string s, uint32_t l) {
                 ToMemory(PC, 0xC6);
             } else if(dat == "A7") {
                 ToMemory(PC, 0xC7);
-            } else {
-                return "Bad parameters at line " + std::to_string(l);                
-            }
-        } else if(CountString(dat, ",") == 3) {
-            if(dat == "D0,D1,D2") {
+            } else if(dat == "D0-D2") {
                 ToMemory(PC, 0xC8);
-            } else if(dat == "D1,D2,D3") {
+            } else if(dat == "D1-D3") {
                 ToMemory(PC, 0xC9);
-            } else if(dat == "D2,D3,D4") {
+            } else if(dat == "D2-D4") {
                 ToMemory(PC, 0xCA);
-            } else if(dat == "D3,D4,D5") {
+            } else if(dat == "D3-D5") {
                 ToMemory(PC, 0xCB);
             } else {
                 return "Bad parameters at line " + std::to_string(l);                

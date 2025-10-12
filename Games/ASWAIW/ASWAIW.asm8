@@ -359,7 +359,7 @@ push a1
 pop a2
 inc a2
 ld d2,[a2]
-push d0,d1,d2
+push d0-d2
 pop a0
 ret
 
@@ -378,7 +378,7 @@ push a1
 pop a2
 inc a2
 ld d2,[a2]
-push d0,d1,d2
+push d0-d2
 pop a1
 pop a0
 ret
@@ -388,7 +388,7 @@ ret
 ; ============
 SetPX:
 push a0
-pop d0,d1,d2
+pop d0-d2
 ld a0,px
 ld [a0],d0
 push a0
@@ -407,7 +407,7 @@ ret
 SetPY:
 push a0
 push a1
-pop d0,d1,d2
+pop d0-d2
 ld a0,py
 ld [a0],d0
 push a0
@@ -498,7 +498,7 @@ ld d0,0
 ld d1,0
 ld a2,pframe
 ld d2,[a2]
-push d0,d1,d2
+push d0-d2
 pop a0 ; a0 contient le numéro de frame (0 ou 1)
 ld a1,0x400
 mult a0,a1
@@ -547,7 +547,7 @@ ld a0,0x2000
 sd_loop:
 dec a0
 push a0
-pop d0,d1,d2
+pop d0-d2
 add d1
 add d2
 cp 0
